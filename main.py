@@ -8,8 +8,9 @@ with open('config/config.json', 'r') as f:
     config = json.load(f)
 
 client = discord.Client()
-Message = bot.Message(client)
-Reaction = bot.Reaction(client)
+api = bot.Api()
+Message = bot.Message(api, client)
+Reaction = bot.Reaction(api, client)
 
 @client.event  # event decorator/wrapper
 async def on_ready():

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 class Reaction:
-    def __init__(self, discordClient):
+    def __init__(self, api, discordClient):
+        self.api = api
         self.client = discordClient
         self.no = "🚫"
         self.yes = "✅"
