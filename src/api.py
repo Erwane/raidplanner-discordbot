@@ -2,6 +2,7 @@ from .db import Db
 import http.client
 import json
 import time
+import urllib
 
 class Api:
     def __init__(self):
@@ -37,14 +38,39 @@ class Api:
 
         return user
 
-    #
+    # get Raidplanner Guild information from local db or API
+    # return user dict
+    def guild(self, id, token=None):
+        guild = None
+
+        # from db
+        if token:
+            res = self.db.fetch('SELECT * FROM guilds WHERE rp_token=?', token)
+            if not res or res['expire'] < time.time():
+                guild = self._guildFromApi(id, token, res)
+
+        elif id:
+            res = self.db.fetch('SELECT * FROM guilds WHERE id=?', id)
+            # guild unknown, return empty object
+            if not res:
+                return None
+
+        if not guild and res:
+            guild = {
+                'id': res['id'],
+                'rp_token': res['rp_token'],
+                'response': json.loads(res['response']),
+                'expire': res['expire']
+            }
+
+        return guild
+
+    # user from API
     def _userFromApi(self, id, fromDb):
         response = self._get('/connections/discord/%d' % id)
 
         if 'code' in response and response['code'] >= 300:
-            print("not connected")
-
-            return None
+            return False
         else:
             me = {
                 'id': id,
@@ -60,7 +86,24 @@ class Api:
 
             return me
 
+    # Guild from API
+    def _guildFromApi(self, id, token, fromDb):
+        response = self._get('/guilds/discord/%s' % urllib.parse.quote_plus(token))
 
-    def events(self, id):
-        return None
+        if not response or ('code' in response and response['code'] >= 300):
+            return False
+        else:
+            item = {
+                'id': id,
+                'rp_token': token,
+                'response': response,
+                'expire': int(time.time()) + (3600 * 6)
+            }
+
+            if not fromDb:
+                self.db.insert('INSERT INTO guilds (id, rp_token, response, expire) VALUES(?, ?, ?, ?)', item['id'], item['rp_token'], json.dumps(item['response']), item['expire'])
+            else:
+                self.db.update('UPDATE guilds SET rp_token=?, response=?, expire=? WHERE id=?', item['rp_token'], json.dumps(item['response']), item['expire'], item['id'])
+
+            return item
 

@@ -8,15 +8,27 @@ class Db:
         self.db = sqlite3.connect(dbPath, detect_types=sqlite3.PARSE_COLNAMES)
         self.db.row_factory = sqlite3.Row
 
+        self.createTable("""users ("id" INTEGER, "rp_id" INTEGER, "response" TEXT, "expire" INTEGER)""")
+        self.createTable("""guilds ("id" INTEGER, "rp_token" TEXT, "response" TEXT, "expire" INTEGER)""")
+
     def __del__(self):
         self.db.close()
 
+    def createTable(self, query, *args):
+        try:
+            c = self.db.cursor()
+            c.execute("CREATE TABLE IF NOT EXISTS %s" % query)
+            self.db.commit()
+        except Exception as e:
+            raise e
+
     def fetch(self, query, *args):
-        c = self.db.cursor()
-
-        c.execute(query, args)
-
-        return c.fetchone()
+        try:
+            c = self.db.cursor()
+            c.execute(query, args)
+            return c.fetchone()
+        except Exception as e:
+            raise e
 
     def insert(self, query, *args):
         try:
