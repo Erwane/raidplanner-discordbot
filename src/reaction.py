@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 class Reaction:
-    def __init__(self, api, discordClient):
+    def __init__(self, client, db, api):
         self.api = api
-        self.client = discordClient
+        self.client = client
+        self.db = db
+
         self.no = "🚫"
         self.yes = "✅"
         self.maybe = "❓"

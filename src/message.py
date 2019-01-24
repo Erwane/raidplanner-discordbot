@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from .db import Db
+import asyncio
 import discord
 import re
 
 class Message:
-    def __init__(self, api, discordClient):
+    def __init__(self, client, db, api):
         self.api = api
-        self.client = discordClient
+        self.client = client
+        self.db = db
 
     async def on(self, message):
         # ignore myself
@@ -41,7 +42,7 @@ class Message:
 
         # check for guild owner
         if msg.author != msg.guild.owner:
-            await msg.channel.send(f"Désolé {msg.author.name}, vous n'êtes pas le propriétaire de ce serveur.");
+            await msg.author.send(f"Désolé {msg.author.name}, vous n'êtes pas le propriétaire de ce serveur.");
             return None
 
         # author
@@ -52,7 +53,7 @@ class Message:
         # direct message
         await author.send("""Pouvez vous me donner votre token Raidplanner ?
 Vous trouverez ce token comme ceci :
-* allez sur le site https://mmorga.org/guild/my
+* allez sur le site <https://mmorga.org/guild/my>
 * cliquez sur "Options et Widget" de la guilde que vous souhaitez lier à ce robot
 * copiez le "Token Discord"
 
@@ -62,29 +63,34 @@ Vous trouverez ce token comme ceci :
             await author.send("Veuillez saisir votre token de guilde.")
 
             def checkToken(m):
-                return re.match("^[A-Za-z0-9/+]{32}$", m.content.strip())
+                return re.match("^[A-Za-z0-9]{32}$", m.content.strip())
 
             try:
                 reply = await self.client.wait_for('message', timeout=120.0, check=checkToken)
                 rpGuild = self.api.guild(guild.id, reply.content)
-                if rpGuild and rpGuild['id'] == guild.id:
-                    return True
+                if rpGuild:
+                    if rpGuild['id'] == guild.id:
+                        return 'attached'
+                    else:
+                        return 'already_attached'
 
-                return False
-            except asyncio.TimeoutError:
-                return None
+                return 'not_found'
+            except asyncio.TimeoutError as e:
+                return 'timeout'
 
         counter = 0
         while counter < 3:
             result = await askToken(author, guild)
+            print(f"token result: {result}")
 
-            if result == False:
+            if result == 'not_found':
                 counter += 1
                 await author.send("Désolé, ce token semble invalide.")
-            elif result == True:
-                await author.send(f"Merci, votre guilde {guild.name} est maintenant lié au Raidplanner.")
-                return
+            elif result == 'already_attached':
+                return await author.send(f"Désolé, ce token est déjà utilisé sur un autre serveur discord.")
+            elif result == 'attached':
+                return await author.send(f"Merci, votre serveur discord **{guild.name}** est maintenant lié au Raidplanner.")
             else:
                 counter = 10
 
-        await author.send(f"Session terminé. La guilde {guild.name} n'a pas été liée au Raidplanner.")
+        await author.send(f"Session terminé. Le serveur discord **{guild.name}** n'a pas été lié au Raidplanner.")

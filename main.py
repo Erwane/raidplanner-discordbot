@@ -9,8 +9,9 @@ with open('config/config.json', 'r') as f:
 
 client = discord.Client()
 api = bot.Api()
-Message = bot.Message(api, client)
-Reaction = bot.Reaction(api, client)
+db = bot.Db()
+Message = bot.Message(client, db, api)
+Reaction = bot.Reaction(client, db, api)
 
 @client.event  # event decorator/wrapper
 async def on_ready():
