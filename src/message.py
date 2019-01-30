@@ -38,5 +38,8 @@ class Message:
 
     async def _attach(self, msg):
         setup = Setup(self.client, self.db, self.api)
-
         await setup.attach(msg)
+
+    async def _channel(self, msg):
+        setup = Setup(self.client, self.db, self.api)
+        await setup.channel(msg)

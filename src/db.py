@@ -8,8 +8,8 @@ class Db:
         self.db = sqlite3.connect(dbPath, detect_types=sqlite3.PARSE_COLNAMES)
         self.db.row_factory = sqlite3.Row
 
-        self.createTable("""users ("id" INTEGER, "rp_id" INTEGER, "response" TEXT, "expire" INTEGER)""")
-        self.createTable("""guilds ("id" INTEGER, "rp_token" TEXT, "response" TEXT, "expire" INTEGER)""")
+        self.createTable("""users ("id" PK INTEGER NOT NULL, "rp_id" INTEGER, "response" TEXT, "expire" INTEGER)""")
+        self.createTable("""guilds ("id" PK INTEGER NOT NULL, "rp_token" TEXT, "response" TEXT, "channel" INTEGER, "expire" INTEGER)""")
 
     def __del__(self):
         self.db.close()
