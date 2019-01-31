@@ -14,6 +14,11 @@ class Tasks:
         self._startTasks()
         self.timing = 5
 
+        # reactions
+        self.reactionNo = "🚫"
+        self.reactionYes = "✅"
+        self.reactionMaybe = "❓"
+
     def _startTasks(self):
         self.client.loop.create_task(self.publishNewEvents())
         self.client.loop.create_task(self.cleanupEvents())
@@ -76,6 +81,12 @@ class Tasks:
                                     event['date_start_timestamp']
                                 )
                                 log().info(f"event {event['id']} published on {guild.id}#{channel.id} with message id {message.id}")
+
+                                # add reactions
+                                await message.add_reaction(self.reactionYes)
+                                await message.add_reaction(self.reactionMaybe)
+                                await message.add_reaction(self.reactionNo)
+
                             elif dbEvent['modified'] < event['modified_timestamp']:
                                 try:
                                     # modified message event
