@@ -1,8 +1,11 @@
+
 from .db import Db
+import datetime
 import http.client
 import json
 import time
 import urllib
+from .mylibs import log
 
 class Api:
     def __init__(self):
@@ -12,7 +15,7 @@ class Api:
 
     def _get(self, uri):
         try:
-            print(f"Api GET: {uri}")
+            log().info(f"Api GET: {uri}")
             connection = self.client.HTTPConnection(self.baseUrl)
             connection.request("GET", uri)
             response = connection.getresponse()
@@ -109,3 +112,23 @@ class Api:
 
             return item
 
+    """
+    fetch next raidplanner events
+    """
+    def nextEvents(self):
+        response = self._get('/events/discord')
+
+        events = []
+        if response and not ('code' in response and response['code'] >= 300):
+            for event in response:
+                # format date start
+                event['date_start'] = datetime.datetime.strptime(event['date_start'], "%Y-%m-%dT%H:%M:%S%z")
+                event['date_start_timestamp'] = event['date_start'].timestamp()
+                # format modified
+                event['modified'] = datetime.datetime.strptime(event['modified'], "%Y-%m-%dT%H:%M:%S%z")
+                event['modified_timestamp'] = event['modified'].timestamp()
+
+                # append to events
+                events.append(event)
+
+        return events

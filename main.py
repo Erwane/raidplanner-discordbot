@@ -2,27 +2,17 @@
 
 import discord
 import json
+import locale
 import src as bot
+
+locale.setlocale(locale.LC_ALL, 'fr_FR.utf8')
 
 with open('config/config.json', 'r') as f:
     config = json.load(f)
 
 client = discord.Client()
-api = bot.Api()
-db = bot.Db()
-Message = bot.Message(client, db, api)
-Reaction = bot.Reaction(client, db, api)
+Bot = bot.Bot(client)
 
-@client.event  # event decorator/wrapper
-async def on_ready():
-    print(f"Bot is up as {client.user}")
-
-@client.event
-async def on_message(message):
-    await Message.on(message)
-
-@client.event
-async def on_raw_reaction_add(payload):
-    await Reaction.on(payload)
-
-client.run(config['token'])
+if __name__ == '__main__':
+    Bot.run(config['token'])
+    # client.run(config['token'])

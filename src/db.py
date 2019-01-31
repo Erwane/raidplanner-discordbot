@@ -10,6 +10,7 @@ class Db:
 
         self.createTable("""users ("id" PK INTEGER NOT NULL, "rp_id" INTEGER, "response" TEXT, "expire" INTEGER)""")
         self.createTable("""guilds ("id" PK INTEGER NOT NULL, "rp_token" TEXT, "response" TEXT, "channel" INTEGER, "expire" INTEGER)""")
+        self.createTable("""events ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "guild_id" INTEGER NOT NULL, "event_id" INTEGER NOT NULL, "msg_id" INTEGER NOT NULL, "modified" INTEGER)""")
 
     def __del__(self):
         self.db.close()
