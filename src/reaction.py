@@ -38,21 +38,42 @@ class Reaction:
 
         return self.flooding[key]['count'] >= self.floodingLimit
 
-    # 308664314993180673 react on 535753694982176789 with reaction: ✅
+    async def getReactionInfos(self, payload):
+        # user
+        user = self.client.get_user(payload.user_id)
+        # guild
+        guild = self.client.get_guild(payload.guild_id)
+        # channel
+        channel = guild.get_channel(payload.channel_id)
+        # message
+        message = await channel.get_message(payload.message_id)
+
+        return user, guild, channel, message
+
+    """
+    check if message is an event message managed by bot
+    """
+    def isEventMessage(self, message):
+        result = self.db.fetch('SELECT id FROM events WHERE msg_id=?', message.id)
+        if not result:
+            return False
+        else:
+            return True
+
+    """
+    analyse user reaction and update subscription to events
+    """
     async def on(self, payload):
         # ignore myself
         if payload.user_id == self.client.user.id or not payload.guild_id:
             return
 
         try:
-            # user
-            user = self.client.get_user(payload.user_id)
-            # guild
-            guild = self.client.get_guild(payload.guild_id)
-            # channel
-            channel = guild.get_channel(payload.channel_id)
-            # message
-            message = await channel.get_message(payload.message_id)
+            user, guild, channel, message = await self.getReactionInfos(payload)
+
+            # ignore reaction not on event messages
+            if not self.isEventMessage(message):
+                return
 
             # remove reaction if not allowed
             if not payload.emoji.name in self.allowedReactions.values():
@@ -84,14 +105,11 @@ class Reaction:
             return
 
         try:
-            # user
-            user = self.client.get_user(payload.user_id)
-            # guild
-            guild = self.client.get_guild(payload.guild_id)
-            # channel
-            channel = guild.get_channel(payload.channel_id)
-            # message
-            message = await channel.get_message(payload.message_id)
+            user, guild, channel, message = await self.getReactionInfos(payload)
+
+            # ignore reaction not on event messages
+            if not self.isEventMessage(message):
+                return
 
             # check if user still have a reaction
             hasReaction=False
