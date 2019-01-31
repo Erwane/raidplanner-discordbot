@@ -31,5 +31,9 @@ class Bot:
         async def on_raw_reaction_add(payload):
             await self.Reaction.on(payload)
 
+        @self.client.event
+        async def on_raw_reaction_remove(payload):
+            await self.Reaction.off(payload)
+
     def run(self, token):
         self.client.run(token)

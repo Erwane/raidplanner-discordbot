@@ -101,11 +101,12 @@ exemple : `#raidplanner`
 Pour une utilisation optimale du service, je vous recommande un canal avec ces permissions afin de toujours voir les événements en cours :
 ```
 @membres :
-    - peut ajouter des réactions
     - ne peut pas envoyer de message
-@RaidplannerBot :
     - peut ajouter des réactions
+@RaidplannerBot :
     - peut envoyer des messages
+    - peut ajouter des réactions
+    - peut gérer les messages
 ```
 """)
 
@@ -140,11 +141,14 @@ Pour une utilisation optimale du service, je vous recommande un canal avec ces p
                     botChannel = guild.get_channel(channelId)
                     permissions = guild.me.permissions_in(botChannel)
 
+                    if not permissions.send_messages:
+                        return await channel.send(f"Désolé, je n'ai pas le droit d'écrire dans le canal <#{channelId}>.")
+
                     if not permissions.add_reactions:
                         return await channel.send(f"Désolé, je n'ai pas le droit d'ajouter des réactions dans le canal <#{channelId}>.")
 
-                    if not permissions.send_messages:
-                        return await channel.send(f"Désolé, je n'ai pas le droit d'écrire dans le canal <#{channelId}>.")
+                    if not permissions.manage_messages:
+                        return await channel.send(f"Désolé, je dois avoir le droit de gérer les messages du canal <#{channelId}>.")
 
                     # attach channel id to guild id
                     self.db.update('UPDATE guilds SET channel=? WHERE id=?', channelId, guild.id)
