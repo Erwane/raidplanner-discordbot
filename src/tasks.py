@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from .mylibs import log
 import asyncio
 import datetime
 import discord
+import time
 
 class Tasks:
     def __init__(self, client, db, api):
@@ -10,10 +12,15 @@ class Tasks:
         self.client = client
         self.db = db
         self._startTasks()
+        self.timing = 5
 
     def _startTasks(self):
         self.client.loop.create_task(self.publishNewEvents())
+        self.client.loop.create_task(self.cleanupEvents())
 
+    """
+    get events form raidplanner API and publish them on the correct discord guild servers channel
+    """
     async def publishNewEvents(self):
         await self.client.wait_for('ready')
 
@@ -38,11 +45,6 @@ class Tasks:
                             if event['discord_token'] != guildConnection['discord_token']:
                                 continue
 
-                            # embed=discord.Embed(title="titre de mon événement  ", url="http://example.com  ", description=" instance ")
-                            # embed.set_author(name="date  ", url="http://example.com  ")
-                            # embed.set_thumbnail(url="https://api.raidhead.com/img/games/wow/hunter/hunter_64x64.png?1408722602 ")
-                            # embed.set_footer(text="description de l'événement ")
-
                             eventEmbed = discord.Embed(
                                 colour=0x93765d,
                                 title=event['title'],
@@ -66,13 +68,14 @@ class Tasks:
                                 message = await channel.send("@here, un événement vient d'être créé", embed=eventEmbed)
 
                                 # store in db
-                                self.db.insert('INSERT INTO events (guild_id, event_id, msg_id, modified) VALUES (?, ?, ?, ?)',
+                                self.db.insert('INSERT INTO events (guild_id, event_id, msg_id, modified, event_start) VALUES (?, ?, ?, ?, ?)',
                                     guild.id,
                                     event['id'],
                                     message.id,
-                                    event['modified_timestamp']
+                                    event['modified_timestamp'],
+                                    event['date_start_timestamp']
                                 )
-                                self.log.info(f"event {event['id']} published on {guild.id}#{channel.id} with message id {message.id}")
+                                log().info(f"event {event['id']} published on {guild.id}#{channel.id} with message id {message.id}")
                             elif dbEvent['modified'] < event['modified_timestamp']:
                                 try:
                                     # modified message event
@@ -82,12 +85,27 @@ class Tasks:
                                     # store new modified date
                                     self.db.update('UPDATE events SET modified=?', event['modified_timestamp'])
 
-                                    self.log.info(f"event {event['id']} modified on {guild.id}#{channel.id} with message id {message.id}")
+                                    log().info(f"event {event['id']} modified on {guild.id}#{channel.id} with message id {message.id}")
                                 except Exception as e:
-                                    self.log.info(f"faild to edit event {dbEvent['id']} on message {dbEvent['msg_id']} : {str(e)}")
-                                    pass
+                                    log().error(f"failed to edit event {dbEvent['id']} on message {dbEvent['msg_id']} : {str(e)}")
 
-                await asyncio.sleep(5)
+                await asyncio.sleep(self.timing)
             except Exception as e:
-                self.log.info(str(e))
-                await asyncio.sleep(5)
+                log().error(str(e))
+                await asyncio.sleep(self.timing)
+
+    """
+    get events form raidplanner API and publish them on the correct discord guild servers channel
+    """
+    async def cleanupEvents(self):
+        await self.client.wait_for('ready')
+
+        while not self.client.is_closed():
+            try:
+                # remove from db
+                self.db.query('DELETE FROM events WHERE event_start<?', int(time.time() - 86400 * 2))
+
+                await asyncio.sleep(self.timing)
+            except Exception as e:
+                log().error(str(e))
+                await asyncio.sleep(self.timing)
