@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from .mylibs import log
 import asyncio
 import discord
 import re
@@ -80,7 +81,7 @@ Vous trouverez ce token comme ceci :
 
         await author.send(f"Session terminé. Le serveur discord **{guild.name}** n'a pas été lié au Raidplanner.")
 
-    async def channel(self, msg):
+    async def chan(self, msg):
         if not await self._checkOwner(msg):
             return None
 
@@ -95,7 +96,18 @@ Vous trouverez ce token comme ceci :
             return None
 
         await channel.send("""Veuillez m'indiquer sur quel canal je dois publier les événements ?
-exemple : `#raidplanner`""")
+exemple : `#raidplanner`
+
+Pour une utilisation optimale du service, je vous recommande un canal avec ces permissions afin de toujours voir les événements en cours :
+```
+@membres :
+    - peut ajouter des réactions
+    - ne peut pas envoyer de message
+@RaidplannerBot :
+    - peut ajouter des réactions
+    - peut envoyer des messages
+```
+""")
 
         async def ask(author, guild):
             def checkAnswer(m):
@@ -112,9 +124,8 @@ exemple : `#raidplanner`""")
             try:
                 reply = await self.client.wait_for('message', timeout=120.0, check=checkAnswer)
 
-                # attach channel id to guild id
+                # extract and return channel id
                 match = re.match("^<#(\d+)>", reply.content.strip())
-                self.db.update('UPDATE guilds SET channel=? WHERE id=?', int(match.group(1)), guild.id)
 
                 return int(match.group(1))
             except asyncio.TimeoutError as e:
@@ -122,10 +133,27 @@ exemple : `#raidplanner`""")
 
         counter = 0
         while counter < 3:
-            result = await ask(author, guild)
+            channelId = await ask(author, guild)
 
-            if result > 0:
-                return await channel.send(f"Merci, je publierai les événements dans le canal <#{result}>.")
+            if channelId > 0:
+                try:
+                    botChannel = guild.get_channel(channelId)
+                    permissions = guild.me.permissions_in(botChannel)
+
+                    if not permissions.add_reactions:
+                        return await channel.send(f"Désolé, je n'ai pas le droit d'ajouter des réactions dans le canal <#{channelId}>.")
+
+                    if not permissions.send_messages:
+                        return await channel.send(f"Désolé, je n'ai pas le droit d'écrire dans le canal <#{channelId}>.")
+
+                    # attach channel id to guild id
+                    self.db.update('UPDATE guilds SET channel=? WHERE id=?', channelId, guild.id)
+
+                    log().info(f"{author.name}#{author.discriminator} give bot channel #{botChannel.name}<{botChannel.id}> in guild <{guild.id}>")
+
+                    return await channel.send(f"Merci, je publierai les événements dans le canal <#{channelId}>.")
+                except Exception as e:
+                    log().error(str(e))
             else:
                 counter = 10
 
