@@ -129,5 +129,3 @@ class Reaction:
 
         except Exception as e:
             log().error(f"Reaction.off(): {str(e)}")
-
-

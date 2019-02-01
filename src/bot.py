@@ -1,20 +1,21 @@
 
-from .mylibs import log
-
 from .api import Api
 from .db import Db
 from .message import Message
+from .mylibs import log
 from .reaction import Reaction
 from .tasks import Tasks
+import discord
 
 class Bot:
-    def __init__(self, client):
-        self.client = client
+    def __init__(self, config):
+        self.config = config
+        self.client = discord.Client()
         self.api = Api()
         self.db = Db()
-        self.Message = Message(client, self.db, self.api)
-        self.Reaction = Reaction(client, self.db, self.api)
-        self.Tasks = Tasks(client, self.db, self.api)
+        self.Message = Message(self.client, self.db, self.api)
+        self.Reaction = Reaction(self.client, self.db, self.api)
+        self.Tasks = Tasks(self.client, self.db, self.api)
 
         self.initEvents()
 
@@ -35,5 +36,5 @@ class Bot:
         async def on_raw_reaction_remove(payload):
             await self.Reaction.off(payload)
 
-    def run(self, token):
-        self.client.run(token)
+    def run(self):
+        self.client.run(self.config['token'])
