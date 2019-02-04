@@ -1,7 +1,7 @@
 
 from .db import Db
 from .mylibs import log
-import datetime
+import datetime as dt
 import http.client
 import json
 import time
@@ -20,10 +20,17 @@ class Api:
             connection = self.client.HTTPConnection(self.baseUrl, timeout=2)
             connection.request("GET", uri)
 
-            return connection.getresponse()
+            response = connection.getresponse()
+
+            if response and response.status >=200 and response.status < 300:
+                return json.loads(response.read())
+            else:
+                log().info(f"Api Get: uri={uri}; status={response.status}; response={response.read()}")
+                return False
+
         except Exception as e:
-            log().warning(f"Api Get: {str(e)}")
-            return None
+            log().warning(f"Api Get: uri={uri}; exception={str(e)}")
+            return False
 
     # get Raidplanner User information from local db or API
     # return user dict
@@ -70,10 +77,10 @@ class Api:
         response = self._get('/guilds/discord/%s' % urllib.parse.quote_plus(token))
 
         # have response and status code is 200
-        if response and response.status >=200 and response.status < 300:
+        if response != False:
             guild = {
                 'rp_token': token,
-                'response': json.loads(response.read()),
+                'response': json.dumps(response),
             }
 
         return guild
@@ -82,16 +89,16 @@ class Api:
     fetch next raidplanner events
     """
     def nextEvents(self):
-        response = self._get('/events/discord')
-
         events = []
-        if response and not ('code' in response and response['code'] >= 300):
+
+        response = self._get('/events/discord')
+        if response != False:
             for event in response:
                 # format date start
-                event['date_start'] = datetime.datetime.strptime(event['date_start'], "%Y-%m-%dT%H:%M:%S%z")
+                event['date_start'] = dt.datetime.strptime(event['date_start'], "%Y-%m-%dT%H:%M:%S%z")
                 event['date_start_timestamp'] = event['date_start'].timestamp()
                 # format modified
-                event['modified'] = datetime.datetime.strptime(event['modified'], "%Y-%m-%dT%H:%M:%S%z")
+                event['modified'] = dt.datetime.strptime(event['modified'], "%Y-%m-%dT%H:%M:%S%z")
                 event['modified_timestamp'] = event['modified'].timestamp()
 
                 # append to events

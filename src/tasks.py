@@ -32,7 +32,7 @@ class Tasks:
         while not self.client.is_closed():
             try:
                 events = self.api.nextEvents()
-                if events != False:
+                if len(events):
                     # loop on connected guilds
                     for guild in self.client.guilds:
                         # check if connected and as channel defined
@@ -43,6 +43,7 @@ class Tasks:
                         # check if raidplanner guild channel still exists
                         channel = guild.get_channel(guildConnection['channel_id'])
                         if not channel:
+                            self.db.query('UPDATE guilds SET channel=NULL WHERE id=?', guild.id)
                             continue
 
                         for event in events:
@@ -102,7 +103,7 @@ class Tasks:
 
                 await asyncio.sleep(self.timing)
             except Exception as e:
-                log().error(str(e))
+                log().error(f"Tasks.publishNewEvents: {str(e)}")
                 await asyncio.sleep(self.timing)
 
     """
