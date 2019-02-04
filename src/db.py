@@ -87,3 +87,32 @@ class Db:
             return None
         else:
             return res["rp_token"]
+
+    # get raidplanner user
+    # return False if not linked
+    def getUser(self, userId):
+        currentValue = self.fetch("SELECT * FROM users WHERE id=?", userId)
+
+        if not currentValue:
+            # from api
+            fromApi = self.api.getUser(userId)
+
+            # nothing exists
+            if not fromApi:
+                return None
+
+            # store api result
+            expire = int(time.time()) + (3600 * 24 * 7)
+            if not currentValue:
+                self.query('INSERT INTO users (id, rp_id, response, expire) VALUES(?, ?, ?, ?)',
+                    userId, fromApi['rp_id'], json.dumps(fromApi['response']), expire
+                )
+            else:
+                self.query('UPDATE users SET rp_id=?, response=?, expire=? WHERE id=?',
+                    fromApi['rp_id'], json.dumps(fromApi['response']), expire, userId
+                )
+
+            # redo currentValue after api update
+            currentValue = self.fetch("SELECT * FROM users WHERE id=?", userId)
+
+        return currentValue

@@ -54,8 +54,8 @@ class Reaction:
         if key in usersCache and usersCache[key]["expire"] > ts:
             return usersCache[key]["value"]
 
-        raidplannerUser = self.api.user(user.id);
-        if raidplannerUser == False and notify:
+        raidplannerUser = self.db.getUser(user.id);
+        if raidplannerUser == None and notify:
             await user.send("""Pour pouvoir interragir avec moi, vous devez lier votre compte Raidplanner avec votre compte Discord.
 Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
 """)
@@ -106,10 +106,10 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
                 return
 
             # get raidplanner user by api
-            dbUser = await self.getRaidplannerUser(user, True)
+            raidplannerUser = await self.getRaidplannerUser(user, True)
 
             # remove reaction if no user connection or not allowed
-            if dbUser == False or not payload.emoji.name in self.allowedReactions.values():
+            if raidplannerUser == None or not payload.emoji.name in self.allowedReactions.values():
                 await message.remove_reaction(payload.emoji, user)
                 return
 
@@ -126,7 +126,7 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
                         await message.remove_reaction(reaction, reactionUser)
 
         except Exception as e:
-            log().error(f"Reaction.on(): {str(e)}")
+            log().error(f"Reaction.on(): user={user.name}; reaction={payload.emoji.name}; exception={str(e)}")
 
     async def off(self, payload):
         # ignore myself

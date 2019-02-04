@@ -32,55 +32,28 @@ class Api:
             log().warning(f"Api Get: uri={uri}; exception={str(e)}")
             return False
 
-    # get Raidplanner User information from local db or API
-    # return user dict
-    def user(self, id):
-        # from db
-        item = self.db.fetch('SELECT * FROM users WHERE id=?', id)
-        if not item or item['expire'] < time.time():
-            user = self._userFromApi(id, item)
-        else:
+    # get Raidplanner User information
+    def getUser(self, userId):
+        user = None
+
+        response = self._get('/connections/discord/%d' % int(userId))
+        if response != False:
             user = {
-                'id': item['id'],
-                'rp_id': item['rp_id'],
-                'response': json.loads(item['response']),
-                'expire': item['expire']
+                'rp_id': response["id"],
+                'response': response,
             }
 
         return user
-
-    # user from API
-    def _userFromApi(self, id, fromDb):
-        response = self._get('/connections/discord/%d' % id)
-
-        if 'code' in response and response['code'] >= 300:
-            return False
-        else:
-            me = {
-                'id': id,
-                'rp_id': response['id'],
-                'response': response,
-                'expire': int(time.time()) + (3600 * 6)
-            }
-
-            if not fromDb:
-                self.db.query('INSERT INTO users (id, rp_id, response, expire) VALUES(?, ?, ?, ?)', me['id'], me['rp_id'], json.dumps(me['response']), me['expire'])
-            else:
-                self.db.query('UPDATE users SET rp_id=?, response=?, expire=? WHERE id=?', me['rp_id'], json.dumps(me['response']), me['expire'], me['id'])
-
-            return me
 
     # get Guild
     def getGuild(self, token):
         guild = None
 
         response = self._get('/guilds/discord/%s' % urllib.parse.quote_plus(token))
-
-        # have response and status code is 200
         if response != False:
             guild = {
                 'rp_token': token,
-                'response': json.dumps(response),
+                'response': response,
             }
 
         return guild
