@@ -97,9 +97,10 @@ Vous trouverez ce token comme ceci :
         guild = msg.guild
         channel = msg.channel
 
-        currentValue = self.db.fetch('SELECT * FROM guilds WHERE id=?', guild.id)
-        if not currentValue or currentValue['rp_token'] == '':
-            await channel.send("""Vous devez attaché ce serveur discord au bot avec la commande `!rp attach`""")
+        guildToken = self.db.getTokenGuild(guild.id)
+
+        if not guildToken:
+            await channel.send("""Vous devez attacher ce serveur discord au bot avec la commande `!rp attach`""")
             return None
 
         await channel.send("""Veuillez m'indiquer sur quel canal je dois publier les événements ?
@@ -148,18 +149,23 @@ Pour une utilisation optimale du service, je vous recommande un canal avec ces p
                     botChannel = guild.get_channel(channelId)
                     permissions = guild.me.permissions_in(botChannel)
 
+                    missingPermissions = []
+
                     if not permissions.send_messages:
-                        return await channel.send(f"Désolé, je n'ai pas le droit d'écrire dans le canal <#{channelId}>.")
+                        missingPermissions.append("**Ecriture** : Envoyer des messages")
 
                     if not permissions.add_reactions:
-                        return await channel.send(f"Désolé, je n'ai pas le droit d'ajouter des réactions dans le canal <#{channelId}>.")
+                        missingPermissions.append("**Réaction** : Ajouter des réactions")
 
                     if not permissions.manage_messages:
-                        return await channel.send(f"Désolé, je dois avoir le droit de gérer les messages du canal <#{channelId}>.")
+                        missingPermissions.append("**Manage** : Gérer les messages")
+
+                    if len(missingPermissions):
+                        msg = f"Désolé, il me manque les permissions suivantes dans le canal <#{channelId}>."
+                        return await channel.send(msg + "\n- " + "\n- ".join(missingPermissions))
 
                     # attach channel id to guild id
                     self.db.query('UPDATE guilds SET channel=? WHERE id=?', channelId, guild.id)
-
                     log().info(f"{author.name}#{author.discriminator} give bot channel #{botChannel.name}<{botChannel.id}> in guild <{guild.id}>")
 
                     return await channel.send(f"Merci, je publierai les événements dans le canal <#{channelId}>.")
