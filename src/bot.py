@@ -12,7 +12,7 @@ class Bot:
         self.config = config
         self.client = discord.Client()
         self.api = Api(config)
-        self.db = Db()
+        self.db = Db(self.api)
         self.Message = Message(self.client, self.db, self.api)
         self.Reaction = Reaction(self.client, self.db, self.api)
         self.Tasks = Tasks(self.client, self.db, self.api)

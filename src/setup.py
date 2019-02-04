@@ -28,6 +28,7 @@ class Setup:
 
         return True
 
+    # Attach discord guild to Raidplanner
     async def attach(self, msg):
         if not await self._checkOwner(msg):
             return None
@@ -53,10 +54,14 @@ Vous trouverez ce token comme ceci :
                 return re.match("^[A-Za-z0-9]{32}$", m.content.strip())
 
             try:
+                # wait for owner reply
                 reply = await self.client.wait_for('message', timeout=120.0, check=checkToken)
-                rpGuild = self.api.guild(guild.id, reply.content)
-                if rpGuild:
-                    if rpGuild['id'] == guild.id:
+
+                # get raiplanner guild
+                raidplannerGuild = self.db.getGuild(guild.id, reply.content.strip())
+
+                if raidplannerGuild:
+                    if raidplannerGuild['id'] == guild.id:
                         return 'attached'
                     else:
                         return 'already_attached'
@@ -81,6 +86,8 @@ Vous trouverez ce token comme ceci :
 
         await author.send(f"Session terminé. Le serveur discord **{guild.name}** n'a pas été lié au Raidplanner.")
 
+    # assign an events channel for bot
+    # check permission before attach
     async def chan(self, msg):
         if not await self._checkOwner(msg):
             return None

@@ -11,18 +11,16 @@ class Api:
     def __init__(self, config):
         self.client = http.client
         self.baseUrl = config['api_base_url']
-        self.db = Db()
+        self.db = Db(self)
         log().info(f"Api initiliazed with baseUrl: {self.baseUrl}")
-
 
     def _get(self, uri):
         try:
             log().info(f"Api Get: {self.baseUrl}{uri}")
-            connection = self.client.HTTPConnection(self.baseUrl)
+            connection = self.client.HTTPConnection(self.baseUrl, timeout=2)
             connection.request("GET", uri)
-            response = connection.getresponse()
 
-            return json.loads(response.read())
+            return connection.getresponse()
         except Exception as e:
             log().warning(f"Api Get: {str(e)}")
             return None
@@ -43,33 +41,6 @@ class Api:
             }
 
         return user
-
-    # get Raidplanner Guild information from local db or API
-    # return user dict
-    def guild(self, id, token=None):
-        guild = None
-
-        # from db
-        if token:
-            res = self.db.fetch('SELECT * FROM guilds WHERE rp_token=?', token)
-            if not res or res['expire'] < time.time():
-                guild = self._guildFromApi(id, token)
-
-        elif id:
-            res = self.db.fetch('SELECT * FROM guilds WHERE id=?', id)
-            # guild unknown, return empty object
-            if not res:
-                return None
-
-        if not guild and res:
-            guild = {
-                'id': res['id'],
-                'rp_token': res['rp_token'],
-                'response': json.loads(res['response']),
-                'expire': res['expire']
-            }
-
-        return guild
 
     # user from API
     def _userFromApi(self, id, fromDb):
@@ -92,28 +63,20 @@ class Api:
 
             return me
 
-    # Guild from API
-    def _guildFromApi(self, id, token):
+    # get Guild
+    def getGuild(self, token):
+        guild = None
+
         response = self._get('/guilds/discord/%s' % urllib.parse.quote_plus(token))
 
-        if not response or ('code' in response and response['code'] >= 300):
-            return False
-        else:
-            item = {
-                'id': id,
+        # have response and status code is 200
+        if response and response.status >=200 and response.status < 300:
+            guild = {
                 'rp_token': token,
-                'response': response,
-                'expire': int(time.time()) + (3600 * 6)
+                'response': json.loads(response.read()),
             }
 
-            res = self.db.fetch('SELECT * FROM guilds WHERE id=?', id)
-
-            if not res:
-                self.db.query('INSERT INTO guilds (id, rp_token, response, expire) VALUES(?, ?, ?, ?)', id, item['rp_token'], json.dumps(item['response']), item['expire'])
-            else:
-                self.db.query('UPDATE guilds SET rp_token=?, response=?, expire=? WHERE id=?', item['rp_token'], json.dumps(item['response']), item['expire'], id)
-
-            return item
+        return guild
 
     """
     fetch next raidplanner events
