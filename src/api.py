@@ -86,9 +86,9 @@ class Api:
             }
 
             if not fromDb:
-                self.db.insert('INSERT INTO users (id, rp_id, response, expire) VALUES(?, ?, ?, ?)', me['id'], me['rp_id'], json.dumps(me['response']), me['expire'])
+                self.db.query('INSERT INTO users (id, rp_id, response, expire) VALUES(?, ?, ?, ?)', me['id'], me['rp_id'], json.dumps(me['response']), me['expire'])
             else:
-                self.db.update('UPDATE users SET rp_id=?, response=?, expire=? WHERE id=?', me['rp_id'], json.dumps(me['response']), me['expire'], me['id'])
+                self.db.query('UPDATE users SET rp_id=?, response=?, expire=? WHERE id=?', me['rp_id'], json.dumps(me['response']), me['expire'], me['id'])
 
             return me
 
@@ -109,9 +109,9 @@ class Api:
             res = self.db.fetch('SELECT * FROM guilds WHERE id=?', id)
 
             if not res:
-                self.db.insert('INSERT INTO guilds (id, rp_token, response, expire) VALUES(?, ?, ?, ?)', id, item['rp_token'], json.dumps(item['response']), item['expire'])
+                self.db.query('INSERT INTO guilds (id, rp_token, response, expire) VALUES(?, ?, ?, ?)', id, item['rp_token'], json.dumps(item['response']), item['expire'])
             else:
-                self.db.update('UPDATE guilds SET rp_token=?, response=?, expire=? WHERE id=?', item['rp_token'], json.dumps(item['response']), item['expire'], id)
+                self.db.query('UPDATE guilds SET rp_token=?, response=?, expire=? WHERE id=?', item['rp_token'], json.dumps(item['response']), item['expire'], id)
 
             return item
 

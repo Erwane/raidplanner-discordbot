@@ -73,7 +73,7 @@ class Tasks:
                                 message = await channel.send("@here, un événement vient d'être créé", embed=eventEmbed)
 
                                 # store in db
-                                self.db.insert('INSERT INTO events (guild_id, event_id, msg_id, modified, event_start) VALUES (?, ?, ?, ?, ?)',
+                                self.db.query('INSERT INTO events (guild_id, event_id, msg_id, modified, event_start) VALUES (?, ?, ?, ?, ?)',
                                     guild.id,
                                     event['id'],
                                     message.id,
@@ -94,7 +94,7 @@ class Tasks:
                                     await message.edit(content=f"@here, événement modifié {event['modified'].strftime('%a %d')}", embed=eventEmbed)
 
                                     # store new modified date
-                                    self.db.update('UPDATE events SET modified=?', event['modified_timestamp'])
+                                    self.db.query('UPDATE events SET modified=?', event['modified_timestamp'])
 
                                     log().info(f"event {event['id']} modified on {guild.id}#{channel.id} with message id {message.id}")
                                 except Exception as e:

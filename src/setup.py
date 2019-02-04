@@ -151,7 +151,7 @@ Pour une utilisation optimale du service, je vous recommande un canal avec ces p
                         return await channel.send(f"Désolé, je dois avoir le droit de gérer les messages du canal <#{channelId}>.")
 
                     # attach channel id to guild id
-                    self.db.update('UPDATE guilds SET channel=? WHERE id=?', channelId, guild.id)
+                    self.db.query('UPDATE guilds SET channel=? WHERE id=?', channelId, guild.id)
 
                     log().info(f"{author.name}#{author.discriminator} give bot channel #{botChannel.name}<{botChannel.id}> in guild <{guild.id}>")
 

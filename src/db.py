@@ -38,19 +38,3 @@ class Db:
             self.db.commit()
         except Exception as e:
             raise e
-
-    def insert(self, query, *args):
-        try:
-            c = self.db.cursor()
-            c.execute(query, args)
-            self.db.commit()
-        except Exception as e:
-            raise e
-
-    def update(self, query, *args):
-        try:
-            c = self.db.cursor()
-            c.execute(query, args)
-            self.db.commit()
-        except Exception as e:
-            raise e
