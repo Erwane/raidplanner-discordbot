@@ -8,20 +8,23 @@ import time
 import urllib
 
 class Api:
-    def __init__(self):
+    def __init__(self, config):
         self.client = http.client
-        self.baseUrl = '192.168.33.1:3000'
+        self.baseUrl = config['api_base_url']
         self.db = Db()
+        log().info(f"Api initiliazed with baseUrl: {self.baseUrl}")
+
 
     def _get(self, uri):
         try:
-            log().info(f"Api GET: {uri}")
+            log().info(f"Api Get: {self.baseUrl}{uri}")
             connection = self.client.HTTPConnection(self.baseUrl)
             connection.request("GET", uri)
             response = connection.getresponse()
 
             return json.loads(response.read())
         except Exception as e:
+            log().warning(f"Api Get: {str(e)}")
             return None
 
     # get Raidplanner User information from local db or API

@@ -4,6 +4,7 @@ from .mylibs import log
 from pprint import pprint
 from time import time
 
+
 class Reaction:
     def __init__(self, client, db, api):
         self.api = api
@@ -16,28 +17,57 @@ class Reaction:
             'maybe': "❓",
         }
 
-        self.floodingLimit = 4;
-        self.floodingTime = 30;
+        self.floodingLimit = 4
+        self.floodingTime = 30
 
-        self.flooding = {}
+        self.cache = {"flooding": {}, "users": {}}
 
+    # Check if user is flooding reaction
     async def _userFlooding(self, user):
         key = user.id
         ts = time()
-        if not key in self.flooding or self.flooding[key]['last'] < ts - self.floodingTime:
-            self.flooding[key] = {
+        floodingCache = self.cache["flooding"]
+        if not key in floodingCache or floodingCache[key]['last'] < ts - self.floodingTime:
+            floodingCache[key] = {
                 'count':0,
                 'last': False
             }
 
-        self.flooding[key]['count'] += 1
-        self.flooding[key]['last'] = ts
+        floodingCache[key]['count'] += 1
+        floodingCache[key]['last'] = ts
 
-        if self.flooding[key]['count'] >= self.floodingLimit and self.flooding[key]['count'] % 2 == 0:
+        if floodingCache[key]['count'] >= self.floodingLimit and floodingCache[key]['count'] % 2 == 0:
             await user.send(":stopwatch: C'est le moment d'arrêter de jouer avec les réactions. Merci de patienter quelques minutes.")
 
-        return self.flooding[key]['count'] >= self.floodingLimit
+        self.cache["flooding"] = floodingCache
 
+        return floodingCache[key]['count'] >= self.floodingLimit
+
+    # get raidplanner user
+    # if "False", send a private help message
+    async def getRaidplannerUser(self, user, notify=False):
+        key = user.id
+        ts = time()
+        usersCache = self.cache["users"]
+
+        # users in internal cache, return it
+        if key in usersCache and usersCache[key]["expire"] > ts:
+            return usersCache[key]["value"]
+
+        raidplannerUser = self.api.user(user.id);
+        if raidplannerUser == False and notify:
+            await user.send("""Pour pouvoir interragir avec moi, vous devez lier votre compte Raidplanner avec votre compte Discord.
+Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
+""")
+
+        usersCache[key] = {
+            "value": raidplannerUser,
+            "expire": ts + 15
+        }
+
+        return raidplannerUser;
+
+    # get all informations about a raw reaction
     async def getReactionInfos(self, payload):
         # user
         user = self.client.get_user(payload.user_id)
@@ -64,7 +94,7 @@ class Reaction:
     analyse user reaction and update subscription to events
     """
     async def on(self, payload):
-        # ignore myself
+        # ignore myself and private reaction
         if payload.user_id == self.client.user.id or not payload.guild_id:
             return
 
@@ -75,8 +105,11 @@ class Reaction:
             if not self.isEventMessage(message):
                 return
 
-            # remove reaction if not allowed
-            if not payload.emoji.name in self.allowedReactions.values():
+            # get raidplanner user by api
+            dbUser = await self.getRaidplannerUser(user, True)
+
+            # remove reaction if no user connection or not allowed
+            if dbUser == False or not payload.emoji.name in self.allowedReactions.values():
                 await message.remove_reaction(payload.emoji, user)
                 return
 
@@ -109,6 +142,13 @@ class Reaction:
 
             # ignore reaction not on event messages
             if not self.isEventMessage(message):
+                return
+
+            # get raidplanner user by api
+            dbUser = await self.getRaidplannerUser(user)
+
+            # remove reaction if no user connection or not allowed
+            if dbUser == False or not payload.emoji.name in self.allowedReactions.values():
                 return
 
             # check if user still have a reaction

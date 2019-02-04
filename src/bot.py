@@ -11,7 +11,7 @@ class Bot:
     def __init__(self, config):
         self.config = config
         self.client = discord.Client()
-        self.api = Api()
+        self.api = Api(config)
         self.db = Db()
         self.Message = Message(self.client, self.db, self.api)
         self.Reaction = Reaction(self.client, self.db, self.api)
