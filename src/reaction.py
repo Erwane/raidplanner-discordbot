@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from .mylibs import log
-from pprint import pprint
 from time import time
 
 
@@ -45,7 +44,7 @@ class Reaction:
 
     # get raidplanner user
     # if "False", send a private help message
-    async def getRaidplannerUser(self, user, notify=False):
+    async def getRaidplannerUser(self, user, guild, notify=False):
         key = user.id
         ts = time()
         usersCache = self.cache["users"]
@@ -54,7 +53,7 @@ class Reaction:
         if key in usersCache and usersCache[key]["expire"] > ts:
             return usersCache[key]["value"]
 
-        raidplannerUser = self.db.getUser(user.id);
+        raidplannerUser = self.db.getUser(user.id, guild.id);
         if raidplannerUser == None and notify:
             await user.send("""Pour pouvoir interragir avec moi, vous devez lier votre compte Raidplanner avec votre compte Discord.
 Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
@@ -106,7 +105,7 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
                 return
 
             # get raidplanner user by api
-            raidplannerUser = await self.getRaidplannerUser(user, True)
+            raidplannerUser = await self.getRaidplannerUser(user, guild, True)
 
             # remove reaction if no user connection or not allowed
             if raidplannerUser == None or not payload.emoji.name in self.allowedReactions.values():
@@ -145,7 +144,7 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
                 return
 
             # get raidplanner user by api
-            dbUser = await self.getRaidplannerUser(user)
+            dbUser = await self.getRaidplannerUser(user, guild)
 
             # remove reaction if no user connection or not allowed
             if dbUser == False or not payload.emoji.name in self.allowedReactions.values():
@@ -168,4 +167,4 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
                 log().info(f"Reaction.off(): Guild=<{guild.name}#{guild.id}>; User=<{user.name}#{user.discriminator}>; Reaction=<{message.id}>; emoji={payload.emoji.name}")
 
         except Exception as e:
-            log().error(f"Reaction.off(): {str(e)}")
+            log().error(f"Reaction.off(): user={user.name}; reaction={payload.emoji.name}; exception={str(e)}")

@@ -1,16 +1,14 @@
+# -*- coding: utf-8 -*-
+
 import src as bot
-import sqlite3
 
-Api = bot.Api()
+Api = bot.Api({'api': {
+    'base_url': '192.168.33.1:3000',
+    'key': "myTestKey",
+    'secret': 'MySecretTestKey'
+    }
+})
 
-me = Api.user(308664314993180673)
-print(f"Me : {me}")
+response = Api.getUser(1)
 
-guild = Api.guild(519451096951947264)
-print(f"Guild: {guild}")
-
-guild = Api.guild(519451096951947264, "szuKyPHekCklQ+Yir7brOTgJ/IN2JgIu")
-print(f"Guild: {guild}")
-
-# events = Api.events(me['id'])
-# print(f"{events}")
+print(response)

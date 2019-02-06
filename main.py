@@ -13,11 +13,3 @@ Bot = bot.Bot(config)
 
 if __name__ == '__main__':
     Bot.run()
-    # client.run(config['token'])
-
-# client = discord.Client()
-# Bot = bot.Bot(client)
-
-# if __name__ == '__main__':
-#     Bot.run(config['token'])
-#     # client.run(config['token'])

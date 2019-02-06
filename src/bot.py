@@ -37,4 +37,4 @@ class Bot:
             await self.Reaction.off(payload)
 
     def run(self):
-        self.client.run(self.config['token'])
+        self.client.run(self.config['discord']['token'])
