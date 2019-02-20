@@ -6,18 +6,22 @@ from datetime import datetime
 from requests.structures import CaseInsensitiveDict
 import random
 import hmac
-import http.client
+from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
 import json
 import urllib
+from pprint import pprint
 
 class Api:
     def __init__(self, config):
-        self.client = http.client
+        # self.client = http.client
         self.config = config['api']
         self.baseUrl = self.config['base_url']
         self.db = Db(self)
         log().info(f"Api initiliazed with baseUrl: {self.baseUrl}")
 
+    # GET request.
+    # Hmac signature is append to headers
     def _get(self, uri, headers={}):
         try:
             headers = self._appendSignature(headers)
@@ -37,6 +41,37 @@ class Api:
 
         except Exception as e:
             log().warning(f"Api._get: uri={uri}; exception={str(e)}")
+            return False
+
+    # PUT request
+    # Hmac signature is append to headers
+    def _put(self, uri, params={}, headers={}):
+        try:
+            params = json.dumps(params, separators=(',', ':'))
+            headers = self._appendSignature(headers, params)
+
+            # request
+            request = Request(
+                self.config['base_url'] + uri,
+                method="PUT",
+                headers=headers,
+                data=params.encode('utf-8')
+                )
+            response = urlopen(request)
+
+            pprint(response)
+            # pprint(response.read())
+
+            if response and response.status >=200 and response.status < 300:
+                return json.loads(response.read())
+            else:
+                return False
+
+        except HTTPError as e:
+            log().warning(f"Api._put: uri={uri}; code={e.code}; body={e.read()}")
+            return False
+        except Exception as e:
+            log().error(f"Api._put: uri={uri}; file={e.filename}; exception={str(e)}")
             return False
 
     # get Raidplanner User information
@@ -86,7 +121,15 @@ class Api:
 
         return events
 
-    def _appendSignature(self, headers):
+    def setPresence(self, eventId, userId, newStatus):
+        log().debug(f"Api.setPresence: event={eventId}; user={userId}; status={newStatus}")
+        response = self._put(f'/events/{eventId}/presence/{userId}', {
+            'status': newStatus
+        })
+        pprint(response)
+
+
+    def _appendSignature(self, headers={}, params={}):
         headers = CaseInsensitiveDict(headers)
 
         if not 'date' in headers:
@@ -102,6 +145,10 @@ class Api:
         # headers content
         for name in headers['headers'].split(' '):
             toSign.append(headers[name])
+        # body params
+        if len(params) > 0:
+            toSign.append(params)
+
         # nonce
         toSign.append(nonce)
 

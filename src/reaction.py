@@ -2,6 +2,7 @@
 
 from .mylibs import log
 from time import time
+from pprint import pprint
 
 
 class Reaction:
@@ -20,6 +21,16 @@ class Reaction:
         self.floodingTime = 30
 
         self.cache = {"flooding": {}, "users": {}}
+
+    # get the emoji reaction key
+    def _getReactionStatus(self, emoji):
+        pprint(emoji)
+        pprint(self.allowedReactions.items())
+        for k, v in self.allowedReactions.items():
+            if v == emoji:
+                return k
+
+        return None
 
     # Check if user is flooding reaction
     async def _userFlooding(self, user):
@@ -44,7 +55,7 @@ class Reaction:
 
     # get raidplanner user
     # if "False", send a private help message
-    async def getRaidplannerUser(self, user, guild, notify=False):
+    async def getRaidplannerUser(self, user, notify=False):
         key = user.id
         ts = time()
         usersCache = self.cache["users"]
@@ -53,13 +64,13 @@ class Reaction:
         if key in usersCache and usersCache[key]["expire"] > ts:
             return usersCache[key]["value"]
 
-        raidplannerUser = self.db.getUser(user.id, guild.id);
+        raidplannerUser = self.db.getUser(user.id);
         if raidplannerUser == None and notify:
             await user.send("""Pour pouvoir interragir avec moi, vous devez lier votre compte Raidplanner avec votre compte Discord.
 Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
 """)
 
-        usersCache[key] = {
+        self.cache["users"][key] = {
             "value": raidplannerUser,
             "expire": ts + 15
         }
@@ -80,14 +91,14 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
         return user, guild, channel, message
 
     """
-    check if message is an event message managed by bot
+    get event attached to this message
     """
-    def isEventMessage(self, message):
-        result = self.db.fetch('SELECT id FROM events WHERE msg_id=?', message.id)
+    def getEventMessage(self, message):
+        result = self.db.fetch('SELECT * FROM events WHERE msg_id=?', message.id)
         if not result:
             return False
         else:
-            return True
+            return result
 
     """
     analyse user reaction and update subscription to events
@@ -99,13 +110,14 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
 
         try:
             user, guild, channel, message = await self.getReactionInfos(payload)
+            event = self.getEventMessage(message)
 
             # ignore reaction not on event messages
-            if not self.isEventMessage(message):
+            if not event:
                 return
 
             # get raidplanner user by api
-            raidplannerUser = await self.getRaidplannerUser(user, guild, True)
+            raidplannerUser = await self.getRaidplannerUser(user, notify=True)
 
             # remove reaction if no user connection or not allowed
             if raidplannerUser == None or not payload.emoji.name in self.allowedReactions.values():
@@ -117,6 +129,7 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
                 return
 
             log().info(f"Reaction.on(): Guild=<{guild.name}#{guild.id}>; User=<{user.name}#{user.discriminator}>; Reaction=<{message.id}>; emoji={payload.emoji.name}")
+            self.api.setPresence(event['event_id'], raidplannerUser['rp_id'], self._getReactionStatus(payload.emoji.name))
 
             for reaction in message.reactions:
                 reactionUsers = await reaction.users().flatten()
@@ -138,13 +151,14 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
 
         try:
             user, guild, channel, message = await self.getReactionInfos(payload)
+            event = self.getEventMessage(message)
 
             # ignore reaction not on event messages
-            if not self.isEventMessage(message):
+            if not event:
                 return
 
             # get raidplanner user by api
-            dbUser = await self.getRaidplannerUser(user, guild)
+            dbUser = await self.getRaidplannerUser(user)
 
             # remove reaction if no user connection or not allowed
             if dbUser == False or not payload.emoji.name in self.allowedReactions.values():

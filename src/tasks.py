@@ -12,7 +12,7 @@ class Tasks:
         self.client = client
         self.db = db
         self._startTasks()
-        self.timing = 2
+        self.timing = 60
 
         # reactions
         self.reactionNo = "🚫"
