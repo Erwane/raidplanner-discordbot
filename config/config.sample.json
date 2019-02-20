@@ -6,5 +6,8 @@
         "base_url": "api.raidplanner.org:443",
         "key": "",
         "secret": ""
+    },
+    "tasks": {
+        "interval": 60
     }
 }

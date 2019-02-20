@@ -6,10 +6,10 @@ import re
 from .setup import Setup
 
 class Message:
-    def __init__(self, client, db, api):
-        self.api = api
-        self.client = client
-        self.db = db
+    def __init__(self, bot):
+        self.api = bot.api
+        self.client = bot.client
+        self.db = bot.db
 
     async def on(self, message):
         # ignore myself

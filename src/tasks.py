@@ -5,14 +5,15 @@ import asyncio
 import datetime
 import discord
 import time
+from pprint import pprint
 
 class Tasks:
-    def __init__(self, client, db, api):
-        self.api = api
-        self.client = client
-        self.db = db
+    def __init__(self, bot):
+        self.api = bot.api
+        self.client = bot.client
+        self.db = bot.db
         self._startTasks()
-        self.timing = 60
+        self.timing = bot.config['tasks']['interval']
 
         # reactions
         self.reactionNo = "🚫"
@@ -27,7 +28,7 @@ class Tasks:
     get events form raidplanner API and publish them on the correct discord guild servers channel
     """
     async def publishNewEvents(self):
-        await self.client.wait_for('ready')
+        await self.client.wait_until_ready()
 
         while not self.client.is_closed():
             try:
@@ -56,17 +57,18 @@ class Tasks:
                                 title=event['title'],
                                 url=event['url'],
                                 description=event['dungeon_title']
-                            )
-                            eventEmbed.set_author(
+                            ).set_author(
                                 name=event['date_start'].strftime('%a %d %b, %Hh%M'),
                                 url=event['url']
-                            )
-                            eventEmbed.set_thumbnail(
+                            ).set_thumbnail(
                                 url=event['game_icon']
+                            ).set_footer(
+                                text="-> les réactions ne reflètent pas les inscriptions définies directement via le raidplanner ou d'autres applications"
                             )
-                            eventEmbed.set_footer(
-                                text=event['description']
-                            )
+
+                            # event description
+                            if len(event['description']):
+                                eventEmbed.add_field(name='Informations', value=event['description'][:1024])
 
                             dbEvent = self.db.fetch('SELECT * FROM events WHERE guild_id=? AND event_id=?', guild.id, event['id'])
                             if not dbEvent:
@@ -110,7 +112,7 @@ class Tasks:
     get events form raidplanner API and publish them on the correct discord guild servers channel
     """
     async def cleanupEvents(self):
-        await self.client.wait_for('ready')
+        await self.client.wait_until_ready()
 
         while not self.client.is_closed():
             try:

@@ -11,11 +11,11 @@ class Bot:
     def __init__(self, config):
         self.config = config
         self.client = discord.Client()
-        self.api = Api(config)
-        self.db = Db(self.api)
-        self.Message = Message(self.client, self.db, self.api)
-        self.Reaction = Reaction(self.client, self.db, self.api)
-        self.Tasks = Tasks(self.client, self.db, self.api)
+        self.db = Db(self)
+        self.api = Api(self)
+        self.Message = Message(self)
+        self.Reaction = Reaction(self)
+        self.Tasks = Tasks(self)
 
         self.initEvents()
 

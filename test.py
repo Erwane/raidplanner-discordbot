@@ -10,5 +10,5 @@ Api = bot.Api({'api': {
 })
 
 # response = Api.nextEvents()
-response = Api.setPresence(9649, 1, 'maybe')
+response = Api.setPresence(9649, 1, 'maybe', 519451096951947264)
 

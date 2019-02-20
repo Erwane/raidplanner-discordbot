@@ -6,7 +6,7 @@ import sqlite3
 import time
 
 class Db:
-    def __init__(self, api):
+    def __init__(self, bot):
         dbPath = os.getcwd() + '/resources/bot.db'
         self.db = sqlite3.connect(dbPath, detect_types=sqlite3.PARSE_COLNAMES)
         self.db.row_factory = sqlite3.Row
@@ -15,7 +15,7 @@ class Db:
         self.createTable("""guilds ("id" PK INTEGER NOT NULL, "rp_token" TEXT, "response" TEXT, "channel" INTEGER, "expire" INTEGER)""")
         self.createTable("""events ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "guild_id" INTEGER NOT NULL, "event_id" INTEGER NOT NULL, "msg_id" INTEGER NOT NULL, "modified" INTEGER, "event_start" INTEGER)""")
 
-        self.api = api
+        self.bot = bot
 
     # close database connection on exit
     def __del__(self):
@@ -58,7 +58,7 @@ class Db:
             guild = self.fetch("SELECT * FROM guilds WHERE rp_token=?", raidplannerToken)
             if not guild:
                 # from api
-                fromApi = self.api.getGuild(raidplannerToken)
+                fromApi = self.bot.api.getGuild(raidplannerToken)
 
                 # nothing exists
                 if not fromApi:
@@ -95,7 +95,7 @@ class Db:
 
         if not currentValue:
             # from api
-            fromApi = self.api.getUser(userId)
+            fromApi = self.bot.api.getUser(userId)
 
             # nothing exists
             if not fromApi:

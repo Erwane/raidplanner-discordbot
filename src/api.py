@@ -13,11 +13,11 @@ import urllib
 from pprint import pprint
 
 class Api:
-    def __init__(self, config):
+    def __init__(self, bot):
         # self.client = http.client
-        self.config = config['api']
+        self.config = bot.config['api']
         self.baseUrl = self.config['base_url']
-        self.db = Db(self)
+        self.bot = bot
         log().info(f"Api initiliazed with baseUrl: {self.baseUrl}")
 
     # GET request.
@@ -129,13 +129,21 @@ class Api:
 
         return events
 
-    def setPresence(self, eventId, userId, newStatus):
-        log().debug(f"Api.setPresence: event={eventId}; user={userId}; status={newStatus}")
-        response = self._put(f'/events/{eventId}/presence/{userId}', {
-            'status': newStatus
-        })
-        pprint(response)
+    def setPresence(self, eventId, userId, newStatus, guildId):
+        try:
+            # get token guild
+            guildToken = self.bot.db.getTokenGuild(guildId)
+            # set presence via api
+            response = self._put(f'/events/{eventId}/presence/{userId}', {
+                'status': newStatus
+            }, {'discord_token': str(guildToken), 'headers': 'date discord_token'})
+            # log
+            log().debug(f"Api.setPresence: guild={guildId}, event={eventId}; user={userId}; status={newStatus}")
 
+            return response
+        except Exception as e:
+            log().error(f"Api.setPresence: uri=/events/{eventId}/presence/{userId}; file={e.filename}; exception={str(e)}")
+            return False
 
     def _appendSignature(self, headers={}, params={}):
         headers = CaseInsensitiveDict(headers)

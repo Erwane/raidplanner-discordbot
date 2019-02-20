@@ -6,10 +6,10 @@ from pprint import pprint
 
 
 class Reaction:
-    def __init__(self, client, db, api):
-        self.api = api
-        self.client = client
-        self.db = db
+    def __init__(self, bot):
+        self.api = bot.api
+        self.client = bot.client
+        self.db = bot.db
 
         self.allowedReactions = {
             'no': "🚫",
@@ -24,8 +24,6 @@ class Reaction:
 
     # get the emoji reaction key
     def _getReactionStatus(self, emoji):
-        pprint(emoji)
-        pprint(self.allowedReactions.items())
         for k, v in self.allowedReactions.items():
             if v == emoji:
                 return k
@@ -128,8 +126,10 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
             if await self._userFlooding(user):
                 return
 
+            # set presence via API
+            self.api.setPresence(event['event_id'], raidplannerUser['rp_id'], self._getReactionStatus(payload.emoji.name), guild.id)
+            # log it if ok
             log().info(f"Reaction.on(): Guild=<{guild.name}#{guild.id}>; User=<{user.name}#{user.discriminator}>; Reaction=<{message.id}>; emoji={payload.emoji.name}")
-            self.api.setPresence(event['event_id'], raidplannerUser['rp_id'], self._getReactionStatus(payload.emoji.name))
 
             for reaction in message.reactions:
                 reactionUsers = await reaction.users().flatten()
