@@ -24,14 +24,15 @@ class Api:
     # Hmac signature is append to headers
     def _get(self, uri, headers={}):
         try:
-            headers = self._appendSignature(headers)
+            headers = self._appendSignature(headers=headers)
 
-            # connection
-            # log().info(f"Api Get: {self.baseUrl}{uri}")
-            connection = self.client.HTTPConnection(self.baseUrl, timeout=2)
-            connection.request("GET", uri, headers=headers)
-
-            response = connection.getresponse()
+            # request
+            request = Request(
+                self.config['base_url'] + uri,
+                method="GET",
+                headers=headers
+                )
+            response = urlopen(request)
 
             if response and response.status >=200 and response.status < 300:
                 return json.loads(response.read())
@@ -39,8 +40,11 @@ class Api:
                 log().info(f"Api._get: uri={uri}; status={response.status}; response={response.read()}")
                 return False
 
+        except HTTPError as e:
+            log().warning(f"Api._get: uri={uri}; code={e.code}; body={e.read()}")
+            return False
         except Exception as e:
-            log().warning(f"Api._get: uri={uri}; exception={str(e)}")
+            log().error(f"Api._get: uri={uri}; file={e.filename}; exception={str(e)}")
             return False
 
     # PUT request
@@ -58,9 +62,6 @@ class Api:
                 data=params.encode('utf-8')
                 )
             response = urlopen(request)
-
-            pprint(response)
-            # pprint(response.read())
 
             if response and response.status >=200 and response.status < 300:
                 return json.loads(response.read())
