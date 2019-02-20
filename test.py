@@ -9,7 +9,6 @@ Api = bot.Api({'api': {
     }
 })
 
-response = Api.nextEvents()
-# response = Api.setPresence(9648, 1, 'maybe')
+# response = Api.nextEvents()
+response = Api.setPresence(9649, 1, 'maybe')
 
-print(response)

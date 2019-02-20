@@ -26,6 +26,9 @@ class Api:
         try:
             headers = self._appendSignature(headers=headers)
 
+            # content-type json
+            headers['content-type'] = 'application/json'
+
             # request
             request = Request(
                 self.config['base_url'] + uri,
@@ -54,6 +57,9 @@ class Api:
             params = json.dumps(params, separators=(',', ':'))
             headers = self._appendSignature(headers, params)
 
+            # content-type json
+            headers['content-type'] = 'application/json'
+
             # request
             request = Request(
                 self.config['base_url'] + uri,
@@ -61,6 +67,7 @@ class Api:
                 headers=headers,
                 data=params.encode('utf-8')
                 )
+
             response = urlopen(request)
 
             if response and response.status >=200 and response.status < 300:
