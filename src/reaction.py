@@ -145,10 +145,6 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
         if payload.user_id == self.client.user.id or not payload.guild_id:
             return
 
-        # ignore bad reactions
-        if not payload.emoji.name in self.allowedReactions.values():
-            return
-
         try:
             user, guild, channel, message = await self.getReactionInfos(payload)
             event = self.getEventMessage(message)
@@ -158,10 +154,11 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
                 return
 
             # get raidplanner user by api
-            dbUser = await self.getRaidplannerUser(user)
+            raidplannerUser = await self.getRaidplannerUser(user)
 
             # remove reaction if no user connection or not allowed
-            if dbUser == False or not payload.emoji.name in self.allowedReactions.values():
+            if raidplannerUser == None or not payload.emoji.name in self.allowedReactions.values():
+                await message.remove_reaction(payload.emoji, user)
                 return
 
             # check if user still have a reaction
@@ -178,7 +175,10 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
 
             # no reaction ? API call to "absent"
             if hasReaction == False:
-                log().info(f"Reaction.off(): Guild=<{guild.name}#{guild.id}>; User=<{user.name}#{user.discriminator}>; Reaction=<{message.id}>; emoji={payload.emoji.name}")
+                # set presence via API
+                self.api.setPresence(event['event_id'], raidplannerUser['rp_id'], 'no', guild.id)
+                # log it if ok
+                log().info(f"Reaction.off(): Guild=<{guild.name}#{guild.id}>; User=<{user.name}#{user.discriminator}>; Reaction=<{message.id}>")
 
         except Exception as e:
-            log().error(f"Reaction.off(): user={user.name}; reaction={payload.emoji.name}; exception={str(e)}")
+            log().error(f"Reaction.off: user={user.name}; reaction={payload.emoji.name}; file={e.filename}; exception={str(e)}")
