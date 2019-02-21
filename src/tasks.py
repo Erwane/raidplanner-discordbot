@@ -54,13 +54,20 @@ class Tasks:
                             if event['discord_token'] != guildConnection['discord_token']:
                                 continue
 
+                            title = event['title']
+                            dateStart = event['date_start'].strftime('%a %d %b, %Hh%M')
+
+                            if event['is_canceled'] == 1:
+                                title = "ANNULÉ : " + title
+                                dateStart = "ANNULÉ : " + dateStart
+
                             eventEmbed = discord.Embed(
                                 colour=0x93765d,
-                                title=event['title'],
+                                title=title,
                                 url=event['url'],
                                 description=event['dungeon_title']
                             ).set_author(
-                                name=event['date_start'].strftime('%a %d %b, %Hh%M'),
+                                name=dateStart,
                                 url=event['url']
                             ).set_thumbnail(
                                 url=event['game_icon']
@@ -96,7 +103,13 @@ class Tasks:
                                 try:
                                     # modified message event
                                     message = await channel.get_message(dbEvent['msg_id'])
-                                    await message.edit(content=f"@here, événement modifié {event['modified'].strftime('%a %d')}", embed=eventEmbed)
+
+                                    messageText = f"@here, événement modifié {event['modified'].strftime('%A %d à %Hh')}"
+
+                                    if event['is_canceled'] == 1:
+                                        messageText = f"@here, cet événement est **annulé** :octagonal_sign:"
+
+                                    await message.edit(content=messageText, embed=eventEmbed)
 
                                     # store new informations
                                     self.db.query('UPDATE events SET modified=?, event_start=?',
