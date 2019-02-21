@@ -79,10 +79,15 @@ class Api:
                 return False
 
         except HTTPError as e:
-            log().warning(f"Api._put: uri={uri}; code={e.code}; body={e.read()}")
-            return False
+            body = e.read()
+            if e.code < 500:
+                return json.loads(body)
+            else:
+                log().warning(f"Api::put - uri={uri}; code={e.code}; body={body}")
+                return False
+
         except Exception as e:
-            log().error(f"Api._put: uri={uri}; file={e.filename}; exception={str(e)}")
+            log().error(f"Api::put - uri={uri}; file={e.filename}; exception={str(e)}")
             return False
 
     # get Raidplanner User information
@@ -141,11 +146,11 @@ class Api:
                 'status': newStatus
             }, {'discord-token': str(guildToken), 'headers': 'date discord-token'})
             # log
-            log().debug(f"Api.setPresence: guild={guildId}, event={eventId}; user={userId}; status={newStatus}")
+            log().debug(f"Api::setPresence: guild={guildId}, event={eventId}; user={userId}; status={newStatus}")
 
             return response
         except Exception as e:
-            log().error(f"Api.setPresence: uri=/events/{eventId}/presence/{userId}; file={e.filename}; exception={str(e)}")
+            log().error(f"Api::setPresence: uri=/events/{eventId}/presence/{userId}; exception={str(e)}")
             return False
 
     def _appendSignature(self, headers={}, params={}):

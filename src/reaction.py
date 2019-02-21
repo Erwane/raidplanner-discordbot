@@ -127,15 +127,27 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
                 return
 
             # set presence via API
-            self.api.setPresence(event['event_id'], raidplannerUser['rp_id'], self._getReactionStatus(payload.emoji.name), guild.id)
-            # log it if ok
-            log().info(f"Reaction.on(): Guild=<{guild.name}#{guild.id}>; User=<{user.name}#{user.discriminator}>; Reaction=<{message.id}>; emoji={payload.emoji.name}")
+            response = self.api.setPresence(event['event_id'], raidplannerUser['rp_id'], self._getReactionStatus(payload.emoji.name), guild.id)
 
-            for reaction in message.reactions:
-                reactionUsers = await reaction.users().flatten()
-                for reactionUser in reactionUsers:
-                    if reactionUser == user and reaction.emoji != payload.emoji.name:
-                        await message.remove_reaction(reaction, reactionUser)
+            if response == False:
+                # remove current reaction
+                await message.remove_reaction(payload.emoji, user)
+            elif response['code'] >= 400:
+                # remove current reaction
+                await message.remove_reaction(payload.emoji, user)
+                if response['code'] == 404:
+                    await user.send("""Veuillez vérifier que vous avez bien un personnage principal actif pour le jeu de cet événement.
+-> https://mmorga.org/persos/my""")
+                elif response['code'] == 420:
+                    await user.send("""Cet événement est **annulé**. Désolé :cry:""")
+            else:
+                # remove other reactions
+                for reaction in message.reactions:
+                    reactionUsers = await reaction.users().flatten()
+                    for reactionUser in reactionUsers:
+                        if reactionUser == user and reaction.emoji != payload.emoji.name:
+                            await message.remove_reaction(reaction, reactionUser)
+                log().info(f"Reaction.on(): Guild=<{guild.name}#{guild.id}>; User=<{user.name}#{user.discriminator}>; Reaction=<{message.id}>; emoji={payload.emoji.name}")
 
         except Exception as e:
             log().error(f"Reaction.on(): user={user.name}; reaction={payload.emoji.name}; exception={str(e)}")
