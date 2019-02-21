@@ -98,10 +98,22 @@ class Tasks:
                                     message = await channel.get_message(dbEvent['msg_id'])
                                     await message.edit(content=f"@here, événement modifié {event['modified'].strftime('%a %d')}", embed=eventEmbed)
 
-                                    # store new modified date
-                                    self.db.query('UPDATE events SET modified=?', event['modified_timestamp'])
-
+                                    # store new informations
+                                    self.db.query('UPDATE events SET modified=?, event_start=?',
+                                        event['modified_timestamp'],
+                                        event['date_start_timestamp']
+                                    )
                                     log().info(f"event {event['id']} modified on {guild.id}#{channel.id} with message id {message.id}")
+
+                                    # date start change for 2 hours
+                                    if abs(dbEvent['event_start'] - event['date_start_timestamp']) > (3600 * 2):
+                                        # remove all reactions
+                                        for reaction in message.reactions:
+                                            reactionUsers = await reaction.users().flatten()
+                                            for reactionUser in reactionUsers:
+                                                if reactionUser != self.client.user:
+                                                    await message.remove_reaction(reaction, reactionUser)
+
                                 except Exception as e:
                                     log().error(f"failed to edit event {dbEvent['id']} on message {dbEvent['msg_id']} : {str(e)}")
 
