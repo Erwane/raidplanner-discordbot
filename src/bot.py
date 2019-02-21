@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 from .api import Api
 from .db import Db

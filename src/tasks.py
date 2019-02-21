@@ -9,16 +9,18 @@ from pprint import pprint
 
 class Tasks:
     def __init__(self, bot):
+        # bot objects
         self.api = bot.api
         self.client = bot.client
         self.db = bot.db
-        self._startTasks()
         self.timing = bot.config['tasks']['interval']
 
         # reactions
         self.reactionNo = "🚫"
         self.reactionYes = "✅"
         self.reactionMaybe = "❓"
+
+        self._startTasks()
 
     def _startTasks(self):
         self.client.loop.create_task(self.publishNewEvents())

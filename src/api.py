@@ -28,6 +28,7 @@ class Api:
 
             # content-type json
             headers['content-type'] = 'application/json'
+            log().debug(f"Api::get - url={uri}; headers={headers}")
 
             # request
             request = Request(
@@ -59,6 +60,8 @@ class Api:
 
             # content-type json
             headers['content-type'] = 'application/json'
+
+            log().debug(f"Api::put - url={uri}; headers={headers}; data={params}")
 
             # request
             request = Request(
