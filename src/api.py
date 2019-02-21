@@ -139,7 +139,7 @@ class Api:
             # set presence via api
             response = self._put(f'/events/{eventId}/presence/{userId}', {
                 'status': newStatus
-            }, {'discord_token': str(guildToken), 'headers': 'date discord_token'})
+            }, {'discord-token': str(guildToken), 'headers': 'date discord-token'})
             # log
             log().debug(f"Api.setPresence: guild={guildId}, event={eventId}; user={userId}; status={newStatus}")
 
