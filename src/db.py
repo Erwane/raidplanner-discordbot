@@ -7,7 +7,7 @@ import time
 
 class Db:
     def __init__(self, bot):
-        dbPath = os.getcwd() + '/resources/bot.db'
+        dbPath = bot.config['rootPath'] + '/resources/bot.db'
         self.db = sqlite3.connect(dbPath, detect_types=sqlite3.PARSE_COLNAMES)
         self.db.row_factory = sqlite3.Row
 
