@@ -27,9 +27,29 @@ class Message:
                 return
 
     async def _help(self, msg):
-        myEmbed = discord.Embed(title="Raidplanner help", description="Aide pour le bot Raidplanner", colour=0xff0000)
         try:
-            await msg.author.send("this is my help", embed=myEmbed)
+            myEmbed=discord.Embed(
+                title="RaidplannerBot",
+                url="https://mmorga.org/content/discord",
+                description="""Ce robot permet aux membres de votre discord de définir leur présence aux événements que vous avez créés sur le site MMOrga/Raidplanner""",
+                color=0x93765d
+            ).set_thumbnail(
+                url="https://cdn.discordapp.com/avatars/367796880824074240/01b803f15658f89ce22658cdf8c3b977.png?size=256"
+            ).add_field(
+                name="!rp attach",
+                value="""Permet d'attacher le robot à votre guilde MMOrga. Vous trouverez votre token de guilde via la page https://mmorga.org/guild/my puis "options et robot discord".""",
+                inline=False
+            ).add_field(
+                name="!rp chan",
+                value="""Défini le canal où seront publiés les événements.""",
+                inline=False
+            ).add_field(
+                name="Documentation",
+                value="""Retrouvez toute la documentation sur cette page : https://mmorga.org/content/discord""",
+                inline=True
+            )
+
+            await msg.author.send("", embed=myEmbed)
         except Exception as e:
             raise e
 
