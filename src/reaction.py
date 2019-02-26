@@ -132,7 +132,7 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
             if response == False:
                 # remove current reaction
                 await message.remove_reaction(payload.emoji, user)
-            elif response['code'] >= 400:
+            elif 'code' in response and response['code'] >= 400:
                 # remove current reaction
                 await message.remove_reaction(payload.emoji, user)
                 if response['code'] == 404:
