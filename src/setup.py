@@ -122,15 +122,17 @@ Vous trouverez ce token comme ceci :
         await channel.send("""Veuillez m'indiquer sur quel canal je dois publier les événements ?
 exemple : `#raidplanner`
 
-Pour une utilisation optimale du service, je vous recommande un canal avec ces permissions afin de toujours voir les événements en cours :
+Pour que le service fonctionne bien, voici les droits requis dans ce canal :
 ```
 @membres :
-    - ne peut pas envoyer de message
-    - peut ajouter des réactions
+    - lire les messages uniquement
 @RaidplannerBot :
-    - peut envoyer des messages
-    - peut ajouter des réactions
-    - peut gérer les messages
+    - lire les messages
+    - envoyer des messages
+    - gérer les messages
+    - voir les anciens messages
+    - mentionner @everyone (n'utilise que @here)
+    - ajouter des réactions
 ```
 """)
 
@@ -167,14 +169,23 @@ Pour une utilisation optimale du service, je vous recommande un canal avec ces p
 
                     missingPermissions = []
 
+                    if not permissions.read_messages:
+                        missingPermissions.append("**Lecture** : Lire les messages")
+
                     if not permissions.send_messages:
                         missingPermissions.append("**Ecriture** : Envoyer des messages")
 
-                    if not permissions.add_reactions:
-                        missingPermissions.append("**Réaction** : Ajouter des réactions")
-
                     if not permissions.manage_messages:
                         missingPermissions.append("**Manage** : Gérer les messages")
+
+                    if not permissions.read_message_history:
+                        missingPermissions.append("**Historique** : Voir les anciens messages")
+
+                    if not permissions.mention_everyone:
+                        missingPermissions.append("**Mention** : Mentionner `@everyone` (n'utilise que `@here`)")
+
+                    if not permissions.add_reactions:
+                        missingPermissions.append("**Réaction** : Ajouter des réactions")
 
                     if len(missingPermissions):
                         msg = f"Désolé, il me manque les permissions suivantes dans le canal <#{channelId}>."

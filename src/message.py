@@ -46,7 +46,7 @@ class Message:
                 inline=False
             ).add_field(
                 name="!rp chan",
-                value="""Définit le canal où seront publiés les événements.""",
+                value="""Définit le canal où seront publiés les événements. Les droits nécessaires sont disponibles dans la documentation.""",
                 inline=False
             ).add_field(
                 name="Documentation",
