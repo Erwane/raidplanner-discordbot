@@ -2,7 +2,7 @@
 
 from .mylibs import log
 import asyncio
-import datetime
+from datetime import datetime
 import discord
 import time
 from pprint import pprint
@@ -39,7 +39,7 @@ class Tasks:
                     # loop on connected guilds
                     for guild in self.client.guilds:
                         # check if connected and as channel defined
-                        guildConnection = self.db.fetch('SELECT rp_token AS discord_token, channel AS channel_id FROM guilds WHERE id=? AND channel IS NOT NULL', guild.id)
+                        guildConnection = self.db.fetch('SELECT rp_token AS discord_token, channel AS channel_id, event_days FROM guilds WHERE id=? AND channel IS NOT NULL', guild.id)
                         if not guildConnection:
                             continue
 
@@ -52,6 +52,14 @@ class Tasks:
                         for event in events:
                             # event is not for this guild
                             if event['discord_token'] != guildConnection['discord_token']:
+                                continue
+
+                            start = datetime.fromtimestamp(event['date_start_timestamp'])
+                            now = datetime.now()
+                            delta = start - now
+
+                            # publish only event in guild event_days options
+                            if delta.days > guildConnection['event_days']:
                                 continue
 
                             title = event['title']
