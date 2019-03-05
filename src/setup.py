@@ -6,10 +6,11 @@ import discord
 import re
 
 class Setup:
-    def __init__(self, client, db, api):
-        self.api = api
-        self.client = client
-        self.db = db
+    def __init__(self, bot):
+        self.bot = bot
+        self.api = bot.api
+        self.client = bot.client
+        self.db = bot.db
 
     """
     Vérifie que le message est initié depuis un serveur discord
@@ -85,6 +86,21 @@ Vous trouverez ce token comme ceci :
                 counter = 10
 
         await author.send(f"Session terminé. Le serveur discord **{guild.name}** n'a pas été lié au Raidplanner.")
+
+    """
+    detach Raidplanner from discord
+    """
+    async def detach(self, msg):
+        if not await self._checkOwner(msg):
+            return None
+
+        guild = msg.guild
+        channel = msg.channel
+
+        self.bot.detach(guild)
+
+        await channel.send(f"Cette guilde n'est plus liée et je ne publierai plus d'événement. Utilisez `!rp attach` pour me rattacher à cette guilde.")
+
 
     # assign an events channel for bot
     # check permission before attach

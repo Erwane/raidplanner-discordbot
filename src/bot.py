@@ -37,5 +37,16 @@ class Bot:
         async def on_raw_reaction_remove(payload):
             await self.Reaction.off(payload)
 
+        @self.client.event
+        async def on_guild_remove(guild):
+            self.detach(guild)
+
     def run(self):
         self.client.run(self.config['discord']['token'])
+
+    """
+    detach bot from guild server
+    """
+    def detach(self, guild):
+        self.db.query('DELETE FROM events WHERE guild_id=?', guild.id)
+        self.db.query('DELETE FROM guilds WHERE id=?', guild.id)
