@@ -1,21 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import json
-import os
-import sqlite3
-import time
+import os, json, sqlite3, time
+from pprint import pprint
 
 class Db:
     def __init__(self, bot):
+        self.bot = bot
         dbPath = bot.config['rootPath'] + '/resources/bot.db'
         self.db = sqlite3.connect(dbPath, detect_types=sqlite3.PARSE_COLNAMES)
         self.db.row_factory = sqlite3.Row
 
-        self.createTable("""users ("id" PK INTEGER NOT NULL, "rp_id" INTEGER, "response" TEXT, "expire" INTEGER)""")
-        self.createTable("""guilds ("id" PK INTEGER NOT NULL, "rp_token" TEXT, "response" TEXT, "channel" INTEGER, "expire" INTEGER)""")
-        self.createTable("""events ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "guild_id" INTEGER NOT NULL, "event_id" INTEGER NOT NULL, "msg_id" INTEGER NOT NULL, "modified" INTEGER, "event_start" INTEGER)""")
-
-        self.bot = bot
+        self._doMigrations()
 
     # close database connection on exit
     def __del__(self):
@@ -38,6 +33,30 @@ class Db:
             return c.fetchone()
         except Exception as e:
             raise e
+
+    # fetch all
+    def fetchall(self, query, *args):
+        try:
+            c = self.db.cursor()
+            c.execute(query, args)
+            return c.fetchall()
+        except Exception as e:
+            raise e
+
+    # column Exists
+    def columnExists(self, table, name):
+        try:
+            c = self.db.cursor()
+            c.execute("PRAGMA table_info('" + table + "')")
+            rows = c.fetchall()
+
+            for column in rows:
+                if column['name'] == name:
+                    return True
+
+            return False
+        except Exception as e:
+            return False
 
     # execute query
     def query(self, query, *args):
@@ -116,3 +135,15 @@ class Db:
             currentValue = self.fetch("SELECT * FROM users WHERE id=?", userId)
 
         return currentValue
+
+    """
+    DB migrations
+    """
+    def _doMigrations(self):
+        self.createTable("""users ("id" PK INTEGER NOT NULL, "rp_id" INTEGER, "response" TEXT, "expire" INTEGER)""")
+        self.createTable("""guilds ("id" PK INTEGER NOT NULL, "rp_token" TEXT, "response" TEXT, "channel" INTEGER, "expire" INTEGER)""")
+        self.createTable("""events ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "guild_id" INTEGER NOT NULL, "event_id" INTEGER NOT NULL, "msg_id" INTEGER NOT NULL, "modified" INTEGER, "event_start" INTEGER)""")
+
+        # age maximum des events
+        if not self.columnExists('guilds', 'event_days'):
+            self.query('ALTER TABLE guilds ADD COLUMN "event_days" INTEGER NOT NULL DEFAULT 7')

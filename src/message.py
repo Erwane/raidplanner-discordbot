@@ -49,6 +49,10 @@ class Message:
                 value="""Définit le canal où seront publiés les événements. Les droits nécessaires sont disponibles dans la documentation.""",
                 inline=False
             ).add_field(
+                name="!rp days",
+                value="""Les événements ayant lieu dans les `x` jours seront publiés dans le canal. Par défaut **7**""",
+                inline=False
+            ).add_field(
                 name="Documentation",
                 value="""Retrouvez toute la documentation sur cette page : https://mmorga.org/content/discord""",
                 inline=True
@@ -72,3 +76,7 @@ class Message:
     async def _chan(self, msg):
         setup = Setup(self.bot)
         await setup.chan(msg)
+
+    async def _days(self, msg):
+        setup = Setup(self.bot)
+        await setup.days(msg)

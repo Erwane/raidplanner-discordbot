@@ -4,6 +4,7 @@ from .mylibs import log
 import asyncio
 import discord
 import re
+from pprint import pprint
 
 class Setup:
     def __init__(self, bot):
@@ -202,3 +203,41 @@ Pour que le service fonctionne bien, voici les droits requis dans ce canal :
                 counter = 10
 
         await channel.send(f"Session terminé. Le Raidplanner n'a pas trouvé de canal adéquat.")
+
+    """
+    nombre de jour pour qu'un événement soit publié
+    """
+    async def days(self, msg):
+        if not await self._checkOwner(msg):
+            return None
+
+        # vars
+        guild = msg.guild
+        channel = msg.channel
+
+        await channel.send("""Publier les événements qui ont lieu dans combien de jours ? (saisir un nombre entre **1** et **15**)""")
+
+        async def ask():
+            def checkAnswer(m):
+                match = re.match("^(\d+)$", m.content.strip())
+                if match:
+                    d = int(match.group(1))
+                    if d >= 1 and d <= 15:
+                        return True
+
+                return False
+
+            try:
+                reply = await self.client.wait_for('message', timeout=30.0, check=checkAnswer)
+
+                return int(reply.content.strip())
+            except asyncio.TimeoutError as e:
+                return False
+
+        days = await ask()
+
+        if days != False:
+            self.db.query('UPDATE guilds SET event_days=? WHERE id=?', days, guild.id)
+            await channel.send("""C'est enregistré.""")
+        else:
+            await channel.send("""Ce n'est pas un nombre.""")

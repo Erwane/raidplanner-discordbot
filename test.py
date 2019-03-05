@@ -11,7 +11,7 @@ with open(rootPath + '/config/config.json', 'r') as f:
     config = json.load(f)
 config['rootPath'] = rootPath
 Bot = bot.Bot(config)
-Bot.run()
+# Bot.run()
 
 
 # Api = bot.Api({'api': {
