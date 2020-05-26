@@ -50,3 +50,16 @@ class Bot:
     def detach(self, guild):
         self.db.query('DELETE FROM events WHERE guild_id=?', guild.id)
         self.db.query('DELETE FROM guilds WHERE id=?', guild.id)
+
+    """
+    Get Raidplanner user from DB/API.
+    Notify to connect if not
+    """
+    async def getRaidplannerUser(self, discordUser, notify=False):
+        raidplannerUser = self.db.getUser(discordUser.id);
+
+        if not raidplannerUser and notify:
+            await discordUser.send("""Pour pouvoir interragir avec moi, vous devez lier votre compte Raidplanner avec votre compte Discord.
+Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
+""")
+        return raidplannerUser

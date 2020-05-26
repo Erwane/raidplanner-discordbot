@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import os, json, locale
+import os, json, locale, sqlite3, time
 import src as bot
 from src.mylibs import log
+from pprint import pprint
 
 locale.setlocale(locale.LC_ALL, 'fr_FR.utf8')
 rootPath = os.path.dirname(os.path.realpath(__file__))
@@ -12,6 +13,10 @@ with open(rootPath + '/config/config.json', 'r') as f:
 config['rootPath'] = rootPath
 Bot = bot.Bot(config)
 # Bot.run()
+
+user = Bot.db.getUser(165076810651009024)
+
+pprint(dict(user))
 
 
 # Api = bot.Api({'api': {

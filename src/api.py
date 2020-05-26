@@ -91,10 +91,10 @@ class Api:
             return False
 
     # get Raidplanner User information
-    def getUser(self, userId):
-        user = None
+    def getUser(self, discordUserId):
+        user = False
 
-        response = self._get('/connections/discord/%d' % int(userId))
+        response = self._get('/connections/discord/%d' % int(discordUserId))
         if response != False:
             user = {
                 'rp_id': response["id"],
@@ -105,7 +105,7 @@ class Api:
 
     # get Guild
     def getGuild(self, token):
-        guild = None
+        guild = False
 
         response = self._get('/guilds/discord/%s' % urllib.parse.quote_plus(token))
         if response != False:

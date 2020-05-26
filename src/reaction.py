@@ -7,6 +7,7 @@ from pprint import pprint
 
 class Reaction:
     def __init__(self, bot):
+        self.bot = bot
         self.api = bot.api
         self.client = bot.client
         self.db = bot.db
@@ -51,30 +52,6 @@ class Reaction:
 
         return floodingCache[key]['count'] >= self.floodingLimit
 
-    # get raidplanner user
-    # if "False", send a private help message
-    async def getRaidplannerUser(self, user, notify=False):
-        key = user.id
-        ts = time()
-        usersCache = self.cache["users"]
-
-        # users in internal cache, return it
-        if key in usersCache and usersCache[key]["expire"] > ts:
-            return usersCache[key]["value"]
-
-        raidplannerUser = self.db.getUser(user.id);
-        if raidplannerUser == None and notify:
-            await user.send("""Pour pouvoir interragir avec moi, vous devez lier votre compte Raidplanner avec votre compte Discord.
-Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
-""")
-
-        self.cache["users"][key] = {
-            "value": raidplannerUser,
-            "expire": ts + 15
-        }
-
-        return raidplannerUser;
-
     # get all informations about a raw reaction
     async def getReactionInfos(self, payload):
         # user
@@ -115,7 +92,7 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
                 return
 
             # get raidplanner user by api
-            raidplannerUser = await self.getRaidplannerUser(user, notify=True)
+            raidplannerUser = await self.bot.getRaidplannerUser(user, notify=True)
 
             # remove reaction if no user connection or not allowed
             if raidplannerUser == None or not payload.emoji.name in self.allowedReactions.values():
@@ -166,7 +143,7 @@ Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
                 return
 
             # get raidplanner user by api
-            raidplannerUser = await self.getRaidplannerUser(user)
+            raidplannerUser = await self.bot.getRaidplannerUser(user)
 
             # remove reaction if no user connection or not allowed
             if raidplannerUser == None or not payload.emoji.name in self.allowedReactions.values():

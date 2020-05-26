@@ -21,22 +21,31 @@ class Setup:
         # disabled in direct or group message
         if type(msg.channel) != discord.channel.TextChannel:
             await msg.author.send(f"Désolé, cette commande doit être utilisé sur un serveur discord.");
-            return None
+            return False
 
         # check for guild owner
         if msg.author != msg.guild.owner:
             await msg.author.send(f"Désolé {msg.author.name}, vous n'êtes pas le propriétaire de ce serveur.");
-            return None
+            return False
 
         return True
 
     # Attach discord guild to Raidplanner
     async def attach(self, msg):
         if not await self._checkOwner(msg):
-            return None
+            return False
 
         # author
         author = msg.author
+
+        # Linked user ?
+        raidplannerAuthor = await self.bot.getRaidplannerUser(author, True)
+
+        pprint(dict(raidplannerAuthor))
+
+        if not raidplannerAuthor:
+            return False
+
         # guild
         guild = msg.guild
 
@@ -93,7 +102,7 @@ Vous trouverez ce token comme ceci :
     """
     async def detach(self, msg):
         if not await self._checkOwner(msg):
-            return None
+            return False
 
         guild = msg.guild
         channel = msg.channel
@@ -107,7 +116,7 @@ Vous trouverez ce token comme ceci :
     # check permission before attach
     async def chan(self, msg):
         if not await self._checkOwner(msg):
-            return None
+            return False
 
         # vars
         author = msg.author
@@ -118,7 +127,7 @@ Vous trouverez ce token comme ceci :
 
         if not guildToken:
             await channel.send("""Vous devez attacher ce serveur discord au bot avec la commande `!rp attach`""")
-            return None
+            return False
 
         await channel.send("""Veuillez m'indiquer sur quel canal je dois publier les événements ?
 exemple : `#raidplanner`
@@ -209,7 +218,7 @@ Pour que le service fonctionne bien, voici les droits requis dans ce canal :
     """
     async def days(self, msg):
         if not await self._checkOwner(msg):
-            return None
+            return False
 
         # vars
         guild = msg.guild

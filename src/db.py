@@ -68,7 +68,7 @@ class Db:
             raise e
 
     # get guild from DB or API if don't exists
-    def getGuild(self, guildId, raidplannerToken=None):
+    def getGuild(self, guildId, raidplannerToken=False):
         currentValue = self.fetch("SELECT id FROM guilds WHERE id=?", guildId)
 
         # with Raidplanner Token
@@ -81,7 +81,7 @@ class Db:
 
                 # nothing exists
                 if not fromApi:
-                    return None
+                    return False
 
                 # store api result
                 expire = int(time.time()) + (3600 * 24 * 7)
@@ -103,36 +103,37 @@ class Db:
     def getTokenGuild(self, guildId):
         res = self.fetch('SELECT * FROM guilds WHERE id=?', guildId)
         if not res:
-            return None
+            return False
         else:
             return res["rp_token"]
 
     # get raidplanner user
     # return False if not linked
-    def getUser(self, userId):
-        currentValue = self.fetch("SELECT * FROM users WHERE id=?", userId)
+    def getUser(self, discordUserId):
+        currentValue = self.fetch("SELECT * FROM users WHERE id=?", discordUserId)
 
-        if not currentValue:
+        if not currentValue or currentValue['expire'] < int(time.time()):
             # from api
-            fromApi = self.bot.api.getUser(userId)
+            fromApi = self.bot.api.getUser(discordUserId)
 
             # nothing exists
             if not fromApi:
-                return None
+                self.query('DELETE FROM users WHERE id=?', discordUserId)
+                return False
 
             # store api result
             expire = int(time.time()) + (3600 * 24 * 7)
             if not currentValue:
                 self.query('INSERT INTO users (id, rp_id, response, expire) VALUES(?, ?, ?, ?)',
-                    userId, fromApi['rp_id'], json.dumps(fromApi['response']), expire
+                    discordUserId, fromApi['rp_id'], json.dumps(fromApi['response']), expire
                 )
             else:
                 self.query('UPDATE users SET rp_id=?, response=?, expire=? WHERE id=?',
-                    fromApi['rp_id'], json.dumps(fromApi['response']), expire, userId
+                    fromApi['rp_id'], json.dumps(fromApi['response']), expire, discordUserId
                 )
 
             # redo currentValue after api update
-            currentValue = self.fetch("SELECT * FROM users WHERE id=?", userId)
+            currentValue = self.fetch("SELECT * FROM users WHERE id=?", discordUserId)
 
         return currentValue
 
