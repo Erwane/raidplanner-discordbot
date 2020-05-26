@@ -94,6 +94,7 @@ Vous trouverez ce token comme ceci :
             elif result == 'already_attached':
                 return await author.send(f"Désolé, ce token est déjà utilisé sur un autre serveur discord.")
             elif result == 'attached':
+                await author.send("Token validé")
                 return await msg.channel.send(f"Merci, votre serveur discord **{guild.name}** est maintenant lié au Raidplanner.")
             else:
                 counter = 10
@@ -121,11 +122,19 @@ Vous trouverez ce token comme ceci :
             await msg.channel.send(f"Le serveur discord **{guild.name}** n'est pas lié au Raidplanner.")
             return True
 
-        # Detach bot
-        self.bot.detach(guild)
-
-        await msg.channel.send(f"Cette guilde n'est plus liée et je ne publierai plus d'événement. Utilisez `!rp attach` pour me rattacher à cette guilde.")
-
+        # Wait owner response
+        try:
+            await msg.channel.send("Le bot sera détaché de **{guild.name}** et toutes les données du bot seront supprimées. **Êtes vous sur ?** (`Y|Yes|O|Oui` / `N|No|Non`)")
+            reply = await self.client.wait_for('message', timeout=5.0)
+            response = reply.content.strip()
+            if re.match("^Y|Yes|O|Oui$", response, flags=re.IGNORECASE):
+                # Detach bot
+                self.bot.detach(guild)
+                await msg.channel.send(f"Le serveur discord **{guild.name}** n'est plus lié au bot.")
+            else:
+                await msg.channel.send(f"Ouf :)")
+        except Exception as e:
+            await msg.channel.send(f"Ouf :)")
 
     # assign an events channel for bot
     # check permission before attach
