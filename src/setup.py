@@ -41,13 +41,16 @@ class Setup:
         # Linked user ?
         raidplannerAuthor = await self.bot.getRaidplannerUser(author, True)
 
-        pprint(dict(raidplannerAuthor))
-
         if not raidplannerAuthor:
             return False
 
         # guild
         guild = msg.guild
+        raidplannerGuild = self.db.getGuild(guild.id)
+
+        if raidplannerGuild:
+            await author.send(f"Le serveur discord **{guild.name}** est déjà lié au Raidplanner.")
+            return True
 
         # direct message
         await author.send("""Pouvez vous me donner votre token Raidplanner ?

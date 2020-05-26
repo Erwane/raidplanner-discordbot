@@ -68,18 +68,16 @@ class Db:
             raise e
 
     # get guild from DB or API if don't exists
-    def getGuild(self, guildId, raidplannerToken=False):
-        currentValue = self.fetch("SELECT id FROM guilds WHERE id=?", guildId)
-
-        # with Raidplanner Token
-        if raidplannerToken:
-            # from db
+    def getGuild(self, discordGuildId, raidplannerToken=False):
+        if not raidplannerToken:
+            guild = self.fetch("SELECT * FROM guilds WHERE id=?", discordGuildId)
+        else:
             guild = self.fetch("SELECT * FROM guilds WHERE rp_token=?", raidplannerToken)
-            if not guild:
-                # from api
+
+            if not guild or guild['expire'] < int(time.time()):
                 fromApi = self.bot.api.getGuild(raidplannerToken)
 
-                # nothing exists
+                # No guild with this token, return false
                 if not fromApi:
                     return False
 
@@ -87,17 +85,17 @@ class Db:
                 expire = int(time.time()) + (3600 * 24 * 7)
                 if not currentValue:
                     self.query('INSERT INTO guilds (id, rp_token, response, expire) VALUES(?, ?, ?, ?)',
-                        guildId, raidplannerToken, json.dumps(fromApi['response']), expire
+                        discordGuildId, raidplannerToken, json.dumps(fromApi['response']), expire
                     )
                 else:
                     self.query('UPDATE guilds SET rp_token=?, response=?, expire=? WHERE id=?',
-                        raidplannerToken, json.dumps(fromApi['response']), expire, guildId
+                        raidplannerToken, json.dumps(fromApi['response']), expire, discordGuildId
                     )
 
             # redo currentValue after api update
-            currentValue = self.fetch("SELECT id FROM guilds WHERE id=?", guildId)
+            guild = self.fetch("SELECT * FROM guilds WHERE id=?", discordGuildId)
 
-        return currentValue
+        return guild
 
     # get raidplanner guild token
     def getTokenGuild(self, guildId):
