@@ -83,7 +83,7 @@ class Db:
 
                 # store api result
                 expire = int(time.time()) + (3600 * 24 * 7)
-                if not currentValue:
+                if not guild:
                     self.query('INSERT INTO guilds (id, rp_token, response, expire) VALUES(?, ?, ?, ?)',
                         discordGuildId, raidplannerToken, json.dumps(fromApi['response']), expire
                     )

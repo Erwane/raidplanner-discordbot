@@ -49,7 +49,7 @@ class Setup:
         raidplannerGuild = self.db.getGuild(guild.id)
 
         if raidplannerGuild:
-            await author.send(f"Le serveur discord **{guild.name}** est déjà lié au Raidplanner.")
+            await msg.channel.send(f"Le serveur discord **{guild.name}** est déjà lié au Raidplanner.")
             return True
 
         # direct message
@@ -69,7 +69,7 @@ Vous trouverez ce token comme ceci :
 
             try:
                 # wait for owner reply
-                reply = await self.client.wait_for('message', timeout=120.0, check=checkToken)
+                reply = await self.client.wait_for('message', timeout=10.0, check=checkToken)
 
                 # get raiplanner guild
                 raidplannerGuild = self.db.getGuild(guild.id, reply.content.strip())
@@ -94,11 +94,11 @@ Vous trouverez ce token comme ceci :
             elif result == 'already_attached':
                 return await author.send(f"Désolé, ce token est déjà utilisé sur un autre serveur discord.")
             elif result == 'attached':
-                return await author.send(f"Merci, votre serveur discord **{guild.name}** est maintenant lié au Raidplanner.")
+                return await msg.channel.send(f"Merci, votre serveur discord **{guild.name}** est maintenant lié au Raidplanner.")
             else:
                 counter = 10
 
-        await author.send(f"Session terminé. Le serveur discord **{guild.name}** n'a pas été lié au Raidplanner.")
+        await msg.channel.send(f"Session terminé. Le serveur discord **{guild.name}** n'a pas été lié au Raidplanner.")
 
     """
     detach Raidplanner from discord
@@ -107,12 +107,24 @@ Vous trouverez ce token comme ceci :
         if not await self._checkOwner(msg):
             return False
 
-        guild = msg.guild
-        channel = msg.channel
+        # author
+        author = msg.author
+        raidplannerAuthor = await self.bot.getRaidplannerUser(author, True)
+        if not raidplannerAuthor:
+            return False
 
+        # guild
+        guild = msg.guild
+        raidplannerGuild = self.db.getGuild(guild.id)
+
+        if not raidplannerGuild:
+            await msg.channel.send(f"Le serveur discord **{guild.name}** n'est pas lié au Raidplanner.")
+            return True
+
+        # Detach bot
         self.bot.detach(guild)
 
-        await channel.send(f"Cette guilde n'est plus liée et je ne publierai plus d'événement. Utilisez `!rp attach` pour me rattacher à cette guilde.")
+        await msg.channel.send(f"Cette guilde n'est plus liée et je ne publierai plus d'événement. Utilisez `!rp attach` pour me rattacher à cette guilde.")
 
 
     # assign an events channel for bot
