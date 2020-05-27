@@ -117,6 +117,14 @@ class Api:
         return guild
 
     """
+    """
+    def setAttach(self, discordGuildId, raidplannerGuild):
+        guildId = raidplannerGuild['infos']['id']
+        response = self._put(f'/guild/{guildId}/discord', {
+            'server_id': discordGuildId
+        }, {'discord-token': str(raidplannerGuild['rp_token']), 'headers': 'date discord-token'})
+
+    """
     fetch next raidplanner events
     """
     def nextEvents(self):

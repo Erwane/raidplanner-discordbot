@@ -61,45 +61,47 @@ Vous trouverez ce token comme ceci :
 
 """)
 
-        async def askToken(author, guild):
-            await author.send("Veuillez saisir votre token de guilde.")
-
-            def checkToken(m):
-                return re.match("^[A-Za-z0-9]{32}$", m.content.strip())
-
-            try:
-                # wait for owner reply
-                reply = await self.client.wait_for('message', timeout=10.0, check=checkToken)
-
-                # get raiplanner guild
-                raidplannerGuild = self.db.getGuild(guild.id, reply.content.strip())
-
-                if raidplannerGuild:
-                    if raidplannerGuild['id'] == guild.id:
-                        return 'attached'
-                    else:
-                        return 'already_attached'
-
-                return 'not_found'
-            except asyncio.TimeoutError as e:
-                return 'timeout'
-
         counter = 0
         while counter < 3:
-            result = await askToken(author, guild)
+            status, raidplannerGuild = await self._attachAskToken(author, guild)
 
-            if result == 'not_found':
+            if status == 'not_found':
                 counter += 1
                 await author.send("Désolé, ce token semble invalide.")
-            elif result == 'already_attached':
+            elif status == 'already_attached':
                 return await author.send(f"Désolé, ce token est déjà utilisé sur un autre serveur discord.")
-            elif result == 'attached':
+            elif status == 'attached':
+                self.api.setAttach(guild.id, raidplannerGuild)
                 await author.send("Token validé")
                 return await msg.channel.send(f"Merci, votre serveur discord **{guild.name}** est maintenant lié au Raidplanner.")
             else:
                 counter = 10
 
-        await msg.channel.send(f"Session terminé. Le serveur discord **{guild.name}** n'a pas été lié au Raidplanner.")
+        await author.send("Session terminé.")
+        await msg.channel.send(f"Le serveur discord **{guild.name}** n'a pas été lié au Raidplanner.")
+
+    async def _attachAskToken(self, author, guild):
+        await author.send("Veuillez saisir votre token de guilde.")
+
+        def checkToken(m):
+            return re.match("^[A-Za-z0-9]{32}$", m.content.strip())
+
+        try:
+            # wait for owner reply
+            reply = await self.client.wait_for('message', timeout=10.0, check=checkToken)
+
+            # get raiplanner guild
+            raidplannerGuild = self.db.getGuild(guild.id, reply.content.strip())
+
+            if raidplannerGuild:
+                if raidplannerGuild['id'] == guild.id:
+                    return 'attached', raidplannerGuild
+                else:
+                    return 'already_attached', False
+
+            return 'not_found', False
+        except asyncio.TimeoutError as e:
+            return 'timeout', False
 
     """
     detach Raidplanner from discord
@@ -124,17 +126,18 @@ Vous trouverez ce token comme ceci :
 
         # Wait owner response
         try:
-            await msg.channel.send("Le bot sera détaché de **{guild.name}** et toutes les données du bot seront supprimées. **Êtes vous sur ?** (`Y|Yes|O|Oui` / `N|No|Non`)")
+            await msg.channel.send(f"Le bot sera détaché de **{guild.name}** et toutes les données du bot seront supprimées. **Êtes vous sur ?** (`Y|Yes|O|Oui` / `N|No|Non`)")
             reply = await self.client.wait_for('message', timeout=5.0)
             response = reply.content.strip()
             if re.match("^Y|Yes|O|Oui$", response, flags=re.IGNORECASE):
                 # Detach bot
+                self.api.setAttach(-1, raidplannerGuild)
                 self.bot.detach(guild)
                 await msg.channel.send(f"Le serveur discord **{guild.name}** n'est plus lié au bot.")
             else:
-                await msg.channel.send(f"Ouf :)")
+                await msg.channel.send("Ouf :)")
         except Exception as e:
-            await msg.channel.send(f"Ouf :)")
+            await msg.channel.send("Ouf :)")
 
     # assign an events channel for bot
     # check permission before attach
