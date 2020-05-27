@@ -30,18 +30,41 @@ class Db:
         try:
             c = self.db.cursor()
             c.execute(query, args)
-            return c.fetchone()
+            result = c.fetchone()
+
+            if not result:
+                return False
+
+            output = dict(result)
+
+            if 'response' in output:
+                output['infos'] = json.loads(output['response'])
+
+            return output
         except Exception as e:
-            raise e
+            return False
 
     # fetch all
     def fetchall(self, query, *args):
         try:
             c = self.db.cursor()
             c.execute(query, args)
-            return c.fetchall()
+            result = c.fetchall()
+
+            if not result:
+                return False
+
+            output = list()
+            for row in result:
+                item = dict(row)
+                if 'response' in item:
+                    item['infos'] = json.loads(item['response'])
+
+                output.append(item)
+
+            return output
         except Exception as e:
-            raise e
+            return False
 
     # column Exists
     def columnExists(self, table, name):
@@ -95,6 +118,8 @@ class Db:
             # redo currentValue after api update
             guild = self.fetch("SELECT * FROM guilds WHERE id=?", discordGuildId)
 
+        print(guild)
+
         return guild
 
     # get raidplanner guild token
@@ -108,9 +133,9 @@ class Db:
     # get raidplanner user
     # return False if not linked
     def getUser(self, discordUserId):
-        currentValue = self.fetch("SELECT * FROM users WHERE id=?", discordUserId)
+        user = self.fetch("SELECT * FROM users WHERE id=?", discordUserId)
 
-        if not currentValue or currentValue['expire'] < int(time.time()):
+        if not user or user['expire'] < int(time.time()):
             # from api
             fromApi = self.bot.api.getUser(discordUserId)
 
@@ -121,7 +146,7 @@ class Db:
 
             # store api result
             expire = int(time.time()) + (3600 * 24 * 7)
-            if not currentValue:
+            if not user:
                 self.query('INSERT INTO users (id, rp_id, response, expire) VALUES(?, ?, ?, ?)',
                     discordUserId, fromApi['rp_id'], json.dumps(fromApi['response']), expire
                 )
@@ -131,9 +156,9 @@ class Db:
                 )
 
             # redo currentValue after api update
-            currentValue = self.fetch("SELECT * FROM users WHERE id=?", discordUserId)
+            user = self.fetch("SELECT * FROM users WHERE id=?", discordUserId)
 
-        return currentValue
+        return user
 
     """
     DB migrations
