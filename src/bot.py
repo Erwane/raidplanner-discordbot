@@ -7,6 +7,7 @@ from .mylibs import log
 from .reaction import Reaction
 from .tasks import Tasks
 import discord
+from pprint import pprint
 
 class Bot:
     def __init__(self, config):
@@ -63,3 +64,21 @@ class Bot:
 Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
 """)
         return raidplannerUser
+
+    """
+    Get bot status for this server
+    """
+    async def status(self, msg):
+        channel = msg.channel
+        guild = msg.guild
+
+        raidplannerGuild = self.db.getGuild(guild.id)
+        if not raidplannerGuild:
+            await channel.send("Le bot n'est pas encore lié à ce serveur.")
+        else:
+            guildTitle = raidplannerGuild['infos']['title']
+            events = self.db.fetch('SELECT count(id) as total FROM events WHERE guild_id=?', guild.id)
+            countEvent = events['total']
+            await channel.send(f"""Ce serveur est lié à la guilde **{guildTitle}** sur MMOrga Raidplanner.
+Le bot a géré `{countEvent}` événement(s).
+""")

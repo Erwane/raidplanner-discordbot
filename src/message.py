@@ -41,6 +41,10 @@ class Message:
                 value="""Permet d'attacher le robot à votre guilde MMOrga. Vous trouverez votre token de guilde via la page https://mmorga.org/guild/my puis "options et robot discord".""",
                 inline=False
             ).add_field(
+                name="!rp status",
+                value="""Affiche le statut du robot pour ce serveur.""",
+                inline=False
+            ).add_field(
                 name="!rp detach",
                 value="""Détache le robot de votre guilde MMOrga. Il ne plubliera plus d'événement.""",
                 inline=False
@@ -68,6 +72,9 @@ class Message:
     async def _attach(self, msg):
         setup = Setup(self.bot)
         await setup.attach(msg)
+
+    async def _status(self, msg):
+        await self.bot.status(msg)
 
     async def _detach(self, msg):
         setup = Setup(self.bot)

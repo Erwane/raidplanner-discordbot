@@ -118,8 +118,6 @@ class Db:
             # redo currentValue after api update
             guild = self.fetch("SELECT * FROM guilds WHERE id=?", discordGuildId)
 
-        print(guild)
-
         return guild
 
     # get raidplanner guild token
