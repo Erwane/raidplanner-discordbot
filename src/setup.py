@@ -71,7 +71,7 @@ Vous trouverez ce token comme ceci :
             elif status == 'already_attached':
                 return await author.send(f"Désolé, ce token est déjà utilisé sur un autre serveur discord.")
             elif status == 'attached':
-                self.api.setAttach(guild.id, raidplannerGuild)
+                self.api.discordAttach(author, guild, raidplannerGuild)
                 await author.send("Token validé")
                 return await msg.channel.send(f"Merci, votre serveur discord **{guild.name}** est maintenant lié au Raidplanner.")
             else:
@@ -131,7 +131,7 @@ Vous trouverez ce token comme ceci :
             response = reply.content.strip()
             if re.match("^Y|Yes|O|Oui$", response, flags=re.IGNORECASE):
                 # Detach bot
-                self.api.setAttach(-1, raidplannerGuild)
+                self.api.discordDetach(author, guild, raidplannerGuild)
                 self.bot.detach(guild)
                 await msg.channel.send(f"Le serveur discord **{guild.name}** n'est plus lié au bot.")
             else:

@@ -51,9 +51,7 @@ class Api:
             log().error(f"Api._get: uri={uri}; file={e.filename}; exception={str(e)}")
             return False
 
-    # PUT request
-    # Hmac signature is append to headers
-    def _put(self, uri, params={}, headers={}):
+    def doRequest(self, method, uri, params={}, headers={}):
         try:
             params = json.dumps(params, separators=(',', ':'))
             headers = self._appendSignature(headers, params)
@@ -66,7 +64,7 @@ class Api:
             # request
             request = Request(
                 self.config['base_url'] + uri,
-                method="PUT",
+                method=method,
                 headers=headers,
                 data=params.encode('utf-8')
                 )
@@ -83,12 +81,20 @@ class Api:
             if e.code < 500:
                 return json.loads(body)
             else:
-                log().warning(f"Api::put - uri={uri}; code={e.code}; body={body}")
+                log().warning(f"Api::{method} - uri={uri}; code={e.code}; body={body}")
                 return False
 
         except Exception as e:
-            log().error(f"Api::put - uri={uri}; file={e.filename}; exception={str(e)}")
+            log().error(f"Api::{method} - uri={uri}; file={e.filename}; exception={str(e)}")
             return False
+
+    # PUT request
+    def _put(self, uri, params={}, headers={}):
+        return self.doRequest("PUT", uri, params={}, headers={})
+
+    # DELETE request
+    def _delete(self, uri, params={}, headers={}):
+        return self.doRequest("DELETE", uri, params={}, headers={})
 
     # get Raidplanner User information
     def getUser(self, discordUserId):
@@ -116,12 +122,21 @@ class Api:
 
         return guild
 
-    """
-    """
-    def setAttach(self, discordGuildId, raidplannerGuild):
+    # Attach discord server to guild
+    def discordAttach(self, author, discordGuild, raidplannerGuild):
+        self._discordAttachDetach('PUT', author, discordGuild, raidplannerGuild)
+
+    # Detach discord server to guild
+    def discordDetach(self, author, discordGuild, raidplannerGuild):
+        self._discordAttachDetach('DELETE', author, discordGuild, raidplannerGuild)
+
+    def _discordAttachDetach(self, method, author, discordGuild, raidplannerGuild):
+        self.doRequest
         guildId = raidplannerGuild['infos']['id']
-        response = self._put(f'/guild/{guildId}/discord', {
-            'server_id': discordGuildId
+        response = self.doRequest(method, f'/guild/{guildId}/discord', {
+            'server_id': discordGuild.id,
+            'server_name': discordGuild.name,
+            'author_id': author.id
         }, {'discord-token': str(raidplannerGuild['rp_token']), 'headers': 'date discord-token'})
 
     """
