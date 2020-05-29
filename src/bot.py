@@ -2,17 +2,19 @@
 
 from .api import Api
 from .db import Db
+from .admin import Admin
 from .message import Message
 from .mylibs import log
 from .reaction import Reaction
 from .tasks import Tasks
 import discord
+from discord.ext import commands
 from pprint import pprint
 
 class Bot:
     def __init__(self, config):
         self.config = config
-        self.client = discord.Client()
+        self.client = commands.Bot(command_prefix=config['prefix'], owner_ids=config['owners'])
         self.db = Db(self)
         self.api = Api(self)
         self.Message = Message(self)
@@ -24,11 +26,7 @@ class Bot:
     def initEvents(self):
         @self.client.event  # event decorator/wrapper
         async def on_ready():
-            log().info(f"Bot is up as {self.client.user}")
-
-        @self.client.event
-        async def on_message(message):
-            await self.Message.on(message)
+            log().info(f"Bot is up as {self.client.user} with version {discord.version_info}")
 
         @self.client.event
         async def on_raw_reaction_add(payload):
@@ -41,6 +39,58 @@ class Bot:
         @self.client.event
         async def on_guild_remove(guild):
             self.detach(guild)
+
+        # Me
+        @self.client.command()
+        async def me(ctx):
+            await ctx.author.send(f"Votre id discord: {ctx.author.id}")
+
+        # Bot status
+        @self.client.command()
+        async def status(self, msg):
+            await self.bot.status(msg)
+
+        # Setup: attach bot to guild
+        @self.client.command()
+        async def attach(self, msg):
+            setup = Setup(self.bot)
+            await setup.attach(msg)
+
+        # Setup: detach bot from guild
+        @self.client.command()
+        async def detach(self, msg):
+            setup = Setup(self.bot)
+            await setup.detach(msg)
+
+        @self.client.command()
+        async def _chan(self, msg):
+            setup = Setup(self.bot)
+            await setup.chan(msg)
+
+        @self.client.command()
+        async def _days(self, msg):
+            setup = Setup(self.bot)
+            await setup.days(msg)
+
+        @self.client.command(name="admin")
+        async def admin(ctx, *args):
+            is_owner = await self.client.is_owner(ctx.author)
+            if not is_owner:
+                return False
+
+            raidplannerAdmin = await self.getRaidplannerUser(ctx.author, notify=True)
+            if not raidplannerAdmin:
+                return False
+
+            try:
+                admin = Admin(self);
+                args = list(args)
+                command = args.pop(0)
+                await getattr(admin, command)(ctx, args)
+            except Exception as e:
+                pprint(e)
+                await ctx.send(f"Cette sous-commande `{command}` admin n'existe pas, ou elle a plantée.")
+                return False
 
     def run(self):
         self.client.run(self.config['discord']['token'])

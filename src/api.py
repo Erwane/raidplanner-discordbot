@@ -10,6 +10,7 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 import json
 import urllib
+import discord
 from pprint import pprint
 
 class Api:
@@ -131,11 +132,18 @@ class Api:
         self._discordAttachDetach('DELETE', author, discordGuild, raidplannerGuild)
 
     def _discordAttachDetach(self, method, author, discordGuild, raidplannerGuild):
-        self.doRequest
         guildId = raidplannerGuild['infos']['id']
+
+        discordGuildId = 0
+        discordGuildName = ''
+
+        if isinstance(discordGuild, discord.Guild):
+            discordGuildId = discordGuild.id
+            discordGuildName = discordGuild.name
+
         response = self.doRequest(method, f'/guild/{guildId}/discord', {
-            'server_id': discordGuild.id,
-            'server_name': discordGuild.name,
+            'server_id': discordGuildId,
+            'server_name': discordGuildName,
             'author_id': author.id
         }, {'discord-token': str(raidplannerGuild['rp_token']), 'headers': 'date discord-token'})
 

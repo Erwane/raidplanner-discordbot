@@ -4,6 +4,7 @@ import asyncio
 import discord
 import re
 from .setup import Setup
+from pprint import pprint
 
 class Message:
     def __init__(self, bot):
@@ -13,9 +14,13 @@ class Message:
         self.db = bot.db
 
     async def on(self, message):
-        # ignore myself
-        if message.author == self.client.user:
-            return
+        prefix = await self.bot.client.get_prefix(message)
+        pprint(prefix)
+        pprint(message)
+
+        # if (!message.content.startsWith("!rp") || message.author.bot) return;
+
+        # args = message.content.slice(prefix.length).split(' ');
 
         command = re.match("^!rp ([^ ]+)( ?)(.*)", message.content.lower())
 
@@ -66,24 +71,11 @@ class Message:
         except Exception as e:
             raise e
 
-    async def _me(self, msg):
-        print(f"me: {msg.author.id}")
 
-    async def _attach(self, msg):
-        setup = Setup(self.bot)
-        await setup.attach(msg)
 
-    async def _status(self, msg):
-        await self.bot.status(msg)
+    async def _admin(self, msg):
+        if not self.bot.config['admins'].index(msg.author.id):
+            return
 
-    async def _detach(self, msg):
-        setup = Setup(self.bot)
-        await setup.detach(msg)
-
-    async def _chan(self, msg):
-        setup = Setup(self.bot)
-        await setup.chan(msg)
-
-    async def _days(self, msg):
-        setup = Setup(self.bot)
-        await setup.days(msg)
+        admins = Admin(self.bot)
+        await admins.command();
