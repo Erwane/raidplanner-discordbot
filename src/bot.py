@@ -6,6 +6,7 @@ from .admin import Admin
 from .message import Message
 from .mylibs import log
 from .reaction import Reaction
+from .setup import Setup
 from .tasks import Tasks
 import discord
 from discord.ext import commands
@@ -15,6 +16,7 @@ class Bot:
     def __init__(self, config):
         self.config = config
         self.client = commands.Bot(command_prefix=config['prefix'], owner_ids=config['owners'])
+        self.bot = self.client
         self.db = Db(self)
         self.api = Api(self)
         self.Message = Message(self)
@@ -38,7 +40,13 @@ class Bot:
 
         @self.client.event
         async def on_guild_remove(guild):
-            self.detach(guild)
+            raidplannerGuild = self.db.getGuild(guild.id)
+
+            # Clean DB
+            self.db.detachBot(guild.id)
+
+            if raidplannerGuild:
+                self.api.discordDetach(False, guild, raidplannerGuild)
 
         # Me
         @self.client.command()
@@ -46,21 +54,34 @@ class Bot:
             await ctx.author.send(f"Votre id discord: {ctx.author.id}")
 
         # Bot status
-        @self.client.command()
-        async def status(self, msg):
-            await self.bot.status(msg)
+        @self.bot.command()
+        @commands.guild_only()
+        async def status(ctx):
+            channel = ctx.message.channel
+            guild = ctx.message.guild
+
+            raidplannerGuild = self.db.getGuild(guild.id)
+            if not raidplannerGuild:
+                await channel.send("Le bot n'est pas encore lié à ce serveur.")
+            else:
+                guildTitle = raidplannerGuild['infos']['title']
+                events = self.db.fetch('SELECT count(id) as total FROM events WHERE guild_id=?', guild.id)
+                countEvent = events['total']
+                await channel.send(f"""Ce serveur est lié à la guilde **{guildTitle}** sur MMOrga Raidplanner.
+    Le bot a géré `{countEvent}` événement(s).
+    """)
 
         # Setup: attach bot to guild
         @self.client.command()
-        async def attach(self, msg):
-            setup = Setup(self.bot)
-            await setup.attach(msg)
+        async def attach(ctx):
+            setup = Setup(self)
+            await setup.attach(ctx.message)
 
         # Setup: detach bot from guild
         @self.client.command()
-        async def detach(self, msg):
-            setup = Setup(self.bot)
-            await setup.detach(msg)
+        async def detach(ctx):
+            setup = Setup(self)
+            await setup.detach(ctx.message)
 
         @self.client.command()
         async def _chan(self, msg):
@@ -92,15 +113,30 @@ class Bot:
                 await ctx.send(f"Cette sous-commande `{command}` admin n'existe pas, ou elle a plantée.")
                 return False
 
+        @status.error
+        async def private_message_error(ctx, error):
+            if isinstance(error, commands.NoPrivateMessage):
+                await ctx.send('Désolé, cette commande doit être utilisé sur un serveur discord.')
+
     def run(self):
         self.client.run(self.config['discord']['token'])
 
     """
-    detach bot from guild server
+    Check if author is server owner
     """
-    def detach(self, guild):
-        self.db.query('DELETE FROM events WHERE guild_id=?', guild.id)
-        self.db.query('DELETE FROM guilds WHERE id=?', guild.id)
+    async def checkServerOwner(self, message, notify=False):
+        # disabled in direct or group message
+        if not isinstance(message.channel, discord.channel.TextChannel):
+            await message.author.send(f"Désolé, cette commande doit être utilisé sur un serveur discord.");
+            return False
+
+        # check for guild server owner
+        if message.author != message.guild.owner:
+            if notify:
+                await message.author.send(f"Désolé {message.author.name}, vous n'êtes pas le propriétaire de ce serveur.");
+            return False
+
+        return True
 
     """
     Get Raidplanner user from DB/API.
@@ -114,21 +150,3 @@ class Bot:
 Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
 """)
         return raidplannerUser
-
-    """
-    Get bot status for this server
-    """
-    async def status(self, msg):
-        channel = msg.channel
-        guild = msg.guild
-
-        raidplannerGuild = self.db.getGuild(guild.id)
-        if not raidplannerGuild:
-            await channel.send("Le bot n'est pas encore lié à ce serveur.")
-        else:
-            guildTitle = raidplannerGuild['infos']['title']
-            events = self.db.fetch('SELECT count(id) as total FROM events WHERE guild_id=?', guild.id)
-            countEvent = events['total']
-            await channel.send(f"""Ce serveur est lié à la guilde **{guildTitle}** sur MMOrga Raidplanner.
-Le bot a géré `{countEvent}` événement(s).
-""")

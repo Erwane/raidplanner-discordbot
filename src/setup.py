@@ -3,6 +3,7 @@
 from .mylibs import log
 import asyncio
 import discord
+from discord.ext import commands
 import re
 from pprint import pprint
 
@@ -13,26 +14,9 @@ class Setup:
         self.client = bot.client
         self.db = bot.db
 
-    """
-    Vérifie que le message est initié depuis un serveur discord
-    et qu'il provient du owner de ce serveur
-    """
-    async def _checkOwner(self, msg):
-        # disabled in direct or group message
-        if type(msg.channel) != discord.channel.TextChannel:
-            await msg.author.send(f"Désolé, cette commande doit être utilisé sur un serveur discord.");
-            return False
-
-        # check for guild owner
-        if msg.author != msg.guild.owner:
-            await msg.author.send(f"Désolé {msg.author.name}, vous n'êtes pas le propriétaire de ce serveur.");
-            return False
-
-        return True
-
     # Attach discord guild to Raidplanner
     async def attach(self, msg):
-        if not await self._checkOwner(msg):
+        if not await self.bot.checkServerOwner(msg, True):
             return False
 
         # author
@@ -107,7 +91,7 @@ Vous trouverez ce token comme ceci :
     detach Raidplanner from discord
     """
     async def detach(self, msg):
-        if not await self._checkOwner(msg):
+        if not await self.bot.checkServerOwner(msg, True):
             return False
 
         # author
@@ -132,7 +116,7 @@ Vous trouverez ce token comme ceci :
             if re.match("^Y|Yes|O|Oui$", response, flags=re.IGNORECASE):
                 # Detach bot
                 self.api.discordDetach(author, guild, raidplannerGuild)
-                self.bot.detach(guild)
+                self.db.detachBot(guild.id)
                 await msg.channel.send(f"Le serveur discord **{guild.name}** n'est plus lié au bot.")
             else:
                 await msg.channel.send("Ouf :)")
@@ -142,7 +126,7 @@ Vous trouverez ce token comme ceci :
     # assign an events channel for bot
     # check permission before attach
     async def chan(self, msg):
-        if not await self._checkOwner(msg):
+        if not await self.bot.checkServerOwner(msg, True):
             return False
 
         # vars
@@ -244,7 +228,7 @@ Pour que le service fonctionne bien, voici les droits requis dans ce canal :
     nombre de jour pour qu'un événement soit publié
     """
     async def days(self, msg):
-        if not await self._checkOwner(msg):
+        if not await self.bot.checkServerOwner(msg, True):
             return False
 
         # vars

@@ -90,6 +90,13 @@ class Db:
         except Exception as e:
             raise e
 
+    """
+    Detach bot, delete all informations
+    """
+    def detachBot(self, discordGuildId):
+        self.query('DELETE FROM events WHERE guild_id=?', discordGuildId)
+        self.query('DELETE FROM guilds WHERE id=?', discordGuildId)
+
     # get guild from DB or API if don't exists
     def getGuild(self, discordGuildId, raidplannerToken=False):
         if not raidplannerToken:

@@ -70,12 +70,3 @@ class Message:
             await msg.author.send("", embed=myEmbed)
         except Exception as e:
             raise e
-
-
-
-    async def _admin(self, msg):
-        if not self.bot.config['admins'].index(msg.author.id):
-            return
-
-        admins = Admin(self.bot)
-        await admins.command();
