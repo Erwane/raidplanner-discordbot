@@ -13,25 +13,6 @@ class Message:
         self.client = bot.client
         self.db = bot.db
 
-    async def on(self, message):
-        prefix = await self.bot.client.get_prefix(message)
-        pprint(prefix)
-        pprint(message)
-
-        # if (!message.content.startsWith("!rp") || message.author.bot) return;
-
-        # args = message.content.slice(prefix.length).split(' ');
-
-        command = re.match("^!rp ([^ ]+)( ?)(.*)", message.content.lower())
-
-        # only my commands
-        if command != None:
-            # print(f"command '{command.group(1)}' by {message.author.id} in {message.channel.id} of {message.guild.id}")
-            try:
-                await getattr(self, '_%s' % command.group(1))(message)
-            except Exception as e:
-                return
-
     async def _help(self, msg):
         try:
             myEmbed=discord.Embed(

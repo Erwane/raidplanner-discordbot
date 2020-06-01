@@ -61,7 +61,7 @@ class Reaction:
         # channel
         channel = guild.get_channel(payload.channel_id)
         # message
-        message = await channel.get_message(payload.message_id)
+        message = await channel.fetch_message(payload.message_id)
 
         return user, guild, channel, message
 
@@ -106,7 +106,7 @@ class Reaction:
             # set presence via API
             response = self.api.setPresence(event['event_id'], raidplannerUser['rp_id'], self._getReactionStatus(payload.emoji.name), guild.id)
 
-            if response == False:
+            if response == False or ('error' in response):
                 # remove current reaction
                 await message.remove_reaction(payload.emoji, user)
             elif 'code' in response and response['code'] >= 400:
