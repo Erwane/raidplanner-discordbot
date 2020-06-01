@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from .db import Db
 from .mylibs import log
 from datetime import datetime
 from requests.structures import CaseInsensitiveDict
@@ -10,6 +9,7 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 import json
 import urllib
+import discord
 from pprint import pprint
 
 class Api:
@@ -20,56 +20,29 @@ class Api:
         self.bot = bot
         log().info(f"Api initiliazed with baseUrl: {self.baseUrl}")
 
-    # GET request.
-    # Hmac signature is append to headers
-    def _get(self, uri, headers={}):
+    def doRequest(self, method, uri, params={}, headers={}):
         try:
-            headers = self._appendSignature(headers=headers)
-
-            # content-type json
             headers['content-type'] = 'application/json'
-            log().debug(f"Api::get - url={uri}; headers={headers}")
-
-            # request
-            request = Request(
-                self.config['base_url'] + uri,
-                method="GET",
-                headers=headers
-                )
-            response = urlopen(request)
-
-            if response and response.status >=200 and response.status < 300:
-                return json.loads(response.read())
-            else:
-                log().info(f"Api._get: uri={uri}; status={response.status}; response={response.read()}")
-                return False
-
-        except HTTPError as e:
-            log().warning(f"Api._get: uri={uri}; code={e.code}; body={e.read()}")
-            return False
-        except Exception as e:
-            log().error(f"Api._get: uri={uri}; file={e.filename}; exception={str(e)}")
-            return False
-
-    # PUT request
-    # Hmac signature is append to headers
-    def _put(self, uri, params={}, headers={}):
-        try:
             params = json.dumps(params, separators=(',', ':'))
-            headers = self._appendSignature(headers, params)
 
-            # content-type json
-            headers['content-type'] = 'application/json'
+            log().debug(f"Api::{method} - url={uri}; headers={headers}; data={params}")
 
-            log().debug(f"Api::put - url={uri}; headers={headers}; data={params}")
-
-            # request
-            request = Request(
-                self.config['base_url'] + uri,
-                method="PUT",
-                headers=headers,
-                data=params.encode('utf-8')
+            if method == 'GET':
+                headers = self._appendSignature(headers)
+                request = Request(
+                    self.config['base_url'] + uri,
+                    method=method,
+                    headers=headers
                 )
+            else:
+                headers = self._appendSignature(headers, params)
+                request = Request(
+                    self.config['base_url'] + uri,
+                    method=method,
+                    headers=headers,
+                    data=params.encode('utf-8')
+                )
+
 
             response = urlopen(request)
 
@@ -83,18 +56,30 @@ class Api:
             if e.code < 500:
                 return json.loads(body)
             else:
-                log().warning(f"Api::put - uri={uri}; code={e.code}; body={body}")
+                log().warning(f"Api::{method} - uri={uri}; code={e.code}; body={body}")
                 return False
 
         except Exception as e:
-            log().error(f"Api::put - uri={uri}; file={e.filename}; exception={str(e)}")
+            log().error(f"Api::{method} - uri={uri}; file={e.filename}; exception={str(e)}")
             return False
 
-    # get Raidplanner User information
-    def getUser(self, userId):
-        user = None
+    # GET request.
+    def _get(self, uri, headers={}):
+        return self.doRequest("GET", uri, headers=headers)
 
-        response = self._get('/connections/discord/%d' % int(userId))
+    # PUT request
+    def _put(self, uri, params={}, headers={}):
+        return self.doRequest("PUT", uri, params=params, headers=headers)
+
+    # DELETE request
+    def _delete(self, uri, params={}, headers={}):
+        return self.doRequest("DELETE", uri, params=params, headers=headers)
+
+    # get Raidplanner User information
+    def getUser(self, discordUserId):
+        user = False
+
+        response = self._get('/connections/discord/%d' % int(discordUserId))
         if response != False:
             user = {
                 'rp_id': response["id"],
@@ -105,7 +90,7 @@ class Api:
 
     # get Guild
     def getGuild(self, token):
-        guild = None
+        guild = False
 
         response = self._get('/guilds/discord/%s' % urllib.parse.quote_plus(token))
         if response != False:
@@ -115,6 +100,34 @@ class Api:
             }
 
         return guild
+
+    # Attach discord server to guild
+    def discordAttach(self, author, discordGuild, raidplannerGuild):
+        self._discordAttachDetach('PUT', author, discordGuild, raidplannerGuild)
+
+    # Detach discord server to guild
+    def discordDetach(self, author, discordGuild, raidplannerGuild):
+        self._discordAttachDetach('DELETE', author, discordGuild, raidplannerGuild)
+
+    def _discordAttachDetach(self, method, author, discordGuild, raidplannerGuild):
+        guildId = raidplannerGuild['infos']['id']
+
+        authorId = 0
+        discordGuildId = 0
+        discordGuildName = ''
+
+        if isinstance(author, discord.Member):
+            authorId = author.id
+
+        if isinstance(discordGuild, discord.Guild):
+            discordGuildId = discordGuild.id
+            discordGuildName = discordGuild.name
+
+        response = self.doRequest(method, f'/guild/{guildId}/discord', {
+            'server_id': discordGuildId,
+            'server_name': discordGuildName,
+            'author_id': authorId
+        }, {'discord-token': str(raidplannerGuild['rp_token']), 'headers': 'date discord-token'})
 
     """
     fetch next raidplanner events

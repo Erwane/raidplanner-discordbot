@@ -3,6 +3,7 @@
 from .mylibs import log
 import asyncio
 import discord
+from discord.ext import commands
 import re
 from pprint import pprint
 
@@ -13,32 +14,27 @@ class Setup:
         self.client = bot.client
         self.db = bot.db
 
-    """
-    Vérifie que le message est initié depuis un serveur discord
-    et qu'il provient du owner de ce serveur
-    """
-    async def _checkOwner(self, msg):
-        # disabled in direct or group message
-        if type(msg.channel) != discord.channel.TextChannel:
-            await msg.author.send(f"Désolé, cette commande doit être utilisé sur un serveur discord.");
-            return None
-
-        # check for guild owner
-        if msg.author != msg.guild.owner:
-            await msg.author.send(f"Désolé {msg.author.name}, vous n'êtes pas le propriétaire de ce serveur.");
-            return None
-
-        return True
-
     # Attach discord guild to Raidplanner
     async def attach(self, msg):
-        if not await self._checkOwner(msg):
-            return None
+        if not await self.bot.checkServerOwner(msg, True):
+            return False
 
         # author
         author = msg.author
+
+        # Linked user ?
+        raidplannerAuthor = await self.bot.getRaidplannerUser(author, True)
+
+        if not raidplannerAuthor:
+            return False
+
         # guild
         guild = msg.guild
+        raidplannerGuild = self.db.getGuild(guild.id)
+
+        if raidplannerGuild:
+            await msg.channel.send(f"Le serveur discord **{guild.name}** est déjà lié au Raidplanner.")
+            return True
 
         # direct message
         await author.send("""Pouvez vous me donner votre token Raidplanner ?
@@ -49,65 +45,89 @@ Vous trouverez ce token comme ceci :
 
 """)
 
-        async def askToken(author, guild):
-            await author.send("Veuillez saisir votre token de guilde.")
-
-            def checkToken(m):
-                return re.match("^[A-Za-z0-9]{32}$", m.content.strip())
-
-            try:
-                # wait for owner reply
-                reply = await self.client.wait_for('message', timeout=120.0, check=checkToken)
-
-                # get raiplanner guild
-                raidplannerGuild = self.db.getGuild(guild.id, reply.content.strip())
-
-                if raidplannerGuild:
-                    if raidplannerGuild['id'] == guild.id:
-                        return 'attached'
-                    else:
-                        return 'already_attached'
-
-                return 'not_found'
-            except asyncio.TimeoutError as e:
-                return 'timeout'
-
         counter = 0
         while counter < 3:
-            result = await askToken(author, guild)
+            status, raidplannerGuild = await self._attachAskToken(author, guild)
 
-            if result == 'not_found':
+            if status == 'not_found':
                 counter += 1
                 await author.send("Désolé, ce token semble invalide.")
-            elif result == 'already_attached':
+            elif status == 'already_attached':
                 return await author.send(f"Désolé, ce token est déjà utilisé sur un autre serveur discord.")
-            elif result == 'attached':
-                return await author.send(f"Merci, votre serveur discord **{guild.name}** est maintenant lié au Raidplanner.")
+            elif status == 'attached':
+                self.api.discordAttach(author, guild, raidplannerGuild)
+                await author.send("Token validé")
+                return await msg.channel.send(f"Merci, votre serveur discord **{guild.name}** est maintenant lié au Raidplanner.")
             else:
                 counter = 10
 
-        await author.send(f"Session terminé. Le serveur discord **{guild.name}** n'a pas été lié au Raidplanner.")
+        await author.send("Session terminé.")
+        await msg.channel.send(f"Le serveur discord **{guild.name}** n'a pas été lié au Raidplanner.")
+
+    async def _attachAskToken(self, author, guild):
+        await author.send("Veuillez saisir votre token de guilde.")
+
+        def checkToken(m):
+            return re.match("^[A-Za-z0-9]{32}$", m.content.strip())
+
+        try:
+            # wait for owner reply
+            reply = await self.client.wait_for('message', timeout=10.0, check=checkToken)
+
+            # get raiplanner guild
+            raidplannerGuild = self.db.getGuild(guild.id, reply.content.strip())
+
+            if raidplannerGuild:
+                if raidplannerGuild['id'] == guild.id:
+                    return 'attached', raidplannerGuild
+                else:
+                    return 'already_attached', False
+
+            return 'not_found', False
+        except asyncio.TimeoutError as e:
+            return 'timeout', False
 
     """
     detach Raidplanner from discord
     """
     async def detach(self, msg):
-        if not await self._checkOwner(msg):
-            return None
+        if not await self.bot.checkServerOwner(msg, True):
+            return False
 
+        # author
+        author = msg.author
+        raidplannerAuthor = await self.bot.getRaidplannerUser(author, True)
+        if not raidplannerAuthor:
+            return False
+
+        # guild
         guild = msg.guild
-        channel = msg.channel
+        raidplannerGuild = self.db.getGuild(guild.id)
 
-        self.bot.detach(guild)
+        if not raidplannerGuild:
+            await msg.channel.send(f"Le serveur discord **{guild.name}** n'est pas lié au Raidplanner.")
+            return True
 
-        await channel.send(f"Cette guilde n'est plus liée et je ne publierai plus d'événement. Utilisez `!rp attach` pour me rattacher à cette guilde.")
-
+        # Wait owner response
+        try:
+            await msg.channel.send(f"Le bot sera détaché de **{guild.name}** et toutes les données du bot seront supprimées. **Êtes vous sur ?** (`Y|Yes|O|Oui` / `N|No|Non`)")
+            reply = await self.client.wait_for('message', timeout=5.0)
+            response = reply.content.strip()
+            if re.match("^Y|Yes|O|Oui$", response, flags=re.IGNORECASE):
+                # Detach bot
+                self.api.discordDetach(author, guild, raidplannerGuild)
+                self.db.detachBot(guild.id)
+                await msg.channel.send(f"Le serveur discord **{guild.name}** n'est plus lié au bot.")
+            else:
+                await msg.channel.send("Ouf :)")
+        except Exception as e:
+            await msg.channel.send("Ouf :)")
 
     # assign an events channel for bot
     # check permission before attach
     async def chan(self, msg):
-        if not await self._checkOwner(msg):
-            return None
+        if not await self.bot.checkServerOwner(msg, True):
+            return False
 
         # vars
         author = msg.author
@@ -118,7 +138,7 @@ Vous trouverez ce token comme ceci :
 
         if not guildToken:
             await channel.send("""Vous devez attacher ce serveur discord au bot avec la commande `!rp attach`""")
-            return None
+            return False
 
         await channel.send("""Veuillez m'indiquer sur quel canal je dois publier les événements ?
 exemple : `#raidplanner`
@@ -208,8 +228,8 @@ Pour que le service fonctionne bien, voici les droits requis dans ce canal :
     nombre de jour pour qu'un événement soit publié
     """
     async def days(self, msg):
-        if not await self._checkOwner(msg):
-            return None
+        if not await self.bot.checkServerOwner(msg, True):
+            return False
 
         # vars
         guild = msg.guild

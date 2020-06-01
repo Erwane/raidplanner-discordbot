@@ -30,18 +30,41 @@ class Db:
         try:
             c = self.db.cursor()
             c.execute(query, args)
-            return c.fetchone()
+            result = c.fetchone()
+
+            if not result:
+                return False
+
+            output = dict(result)
+
+            if 'response' in output:
+                output['infos'] = json.loads(output['response'])
+
+            return output
         except Exception as e:
-            raise e
+            return False
 
     # fetch all
     def fetchall(self, query, *args):
         try:
             c = self.db.cursor()
             c.execute(query, args)
-            return c.fetchall()
+            result = c.fetchall()
+
+            if not result:
+                return False
+
+            output = list()
+            for row in result:
+                item = dict(row)
+                if 'response' in item:
+                    item['infos'] = json.loads(item['response'])
+
+                output.append(item)
+
+            return output
         except Exception as e:
-            raise e
+            return False
 
     # column Exists
     def columnExists(self, table, name):
@@ -67,74 +90,80 @@ class Db:
         except Exception as e:
             raise e
 
-    # get guild from DB or API if don't exists
-    def getGuild(self, guildId, raidplannerToken=None):
-        currentValue = self.fetch("SELECT id FROM guilds WHERE id=?", guildId)
+    """
+    Detach bot, delete all informations
+    """
+    def detachBot(self, discordGuildId):
+        self.query('DELETE FROM events WHERE guild_id=?', discordGuildId)
+        self.query('DELETE FROM guilds WHERE id=?', discordGuildId)
 
-        # with Raidplanner Token
-        if raidplannerToken:
-            # from db
+    # get guild from DB or API if don't exists
+    def getGuild(self, discordGuildId, raidplannerToken=False):
+        if not raidplannerToken:
+            guild = self.fetch("SELECT * FROM guilds WHERE id=?", discordGuildId)
+        else:
             guild = self.fetch("SELECT * FROM guilds WHERE rp_token=?", raidplannerToken)
-            if not guild:
-                # from api
+
+            if not guild or guild['expire'] < int(time.time()):
                 fromApi = self.bot.api.getGuild(raidplannerToken)
 
-                # nothing exists
+                # No guild with this token, return false
                 if not fromApi:
-                    return None
+                    return False
 
                 # store api result
                 expire = int(time.time()) + (3600 * 24 * 7)
-                if not currentValue:
+                if not guild:
                     self.query('INSERT INTO guilds (id, rp_token, response, expire) VALUES(?, ?, ?, ?)',
-                        guildId, raidplannerToken, json.dumps(fromApi['response']), expire
+                        discordGuildId, raidplannerToken, json.dumps(fromApi['response']), expire
                     )
                 else:
                     self.query('UPDATE guilds SET rp_token=?, response=?, expire=? WHERE id=?',
-                        raidplannerToken, json.dumps(fromApi['response']), expire, guildId
+                        raidplannerToken, json.dumps(fromApi['response']), expire, discordGuildId
                     )
 
             # redo currentValue after api update
-            currentValue = self.fetch("SELECT id FROM guilds WHERE id=?", guildId)
+            guild = self.fetch("SELECT * FROM guilds WHERE id=?", discordGuildId)
 
-        return currentValue
+        return guild
 
     # get raidplanner guild token
     def getTokenGuild(self, guildId):
         res = self.fetch('SELECT * FROM guilds WHERE id=?', guildId)
         if not res:
-            return None
+            return False
         else:
             return res["rp_token"]
 
     # get raidplanner user
     # return False if not linked
-    def getUser(self, userId):
-        currentValue = self.fetch("SELECT * FROM users WHERE id=?", userId)
+    def getUser(self, discordUserId):
+        user = self.fetch("SELECT * FROM users WHERE id=?", discordUserId)
 
-        if not currentValue:
+        if not user or user['expire'] < int(time.time()):
             # from api
-            fromApi = self.bot.api.getUser(userId)
+            fromApi = self.bot.api.getUser(discordUserId)
 
             # nothing exists
             if not fromApi:
-                return None
+                self.query('DELETE FROM users WHERE id=?', discordUserId)
+                return False
 
             # store api result
             expire = int(time.time()) + (3600 * 24 * 7)
-            if not currentValue:
+            if not user:
                 self.query('INSERT INTO users (id, rp_id, response, expire) VALUES(?, ?, ?, ?)',
-                    userId, fromApi['rp_id'], json.dumps(fromApi['response']), expire
+                    discordUserId, fromApi['rp_id'], json.dumps(fromApi['response']), expire
                 )
             else:
                 self.query('UPDATE users SET rp_id=?, response=?, expire=? WHERE id=?',
-                    fromApi['rp_id'], json.dumps(fromApi['response']), expire, userId
+                    fromApi['rp_id'], json.dumps(fromApi['response']), expire, discordUserId
                 )
 
             # redo currentValue after api update
-            currentValue = self.fetch("SELECT * FROM users WHERE id=?", userId)
+            user = self.fetch("SELECT * FROM users WHERE id=?", discordUserId)
 
-        return currentValue
+        return user
 
     """
     DB migrations
