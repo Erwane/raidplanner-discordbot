@@ -84,14 +84,14 @@ class Bot:
             await setup.detach(ctx.message)
 
         @self.client.command()
-        async def _chan(self, msg):
-            setup = Setup(self.bot)
-            await setup.chan(msg)
+        async def chan(ctx):
+            setup = Setup(self)
+            await setup.chan(ctx.message)
 
         @self.client.command()
-        async def _days(self, msg):
-            setup = Setup(self.bot)
-            await setup.days(msg)
+        async def days(ctx):
+            setup = Setup(self)
+            await setup.days(ctx.message)
 
         @self.client.command(name="admin")
         async def admin(ctx, *args):
@@ -109,7 +109,6 @@ class Bot:
                 command = args.pop(0)
                 await getattr(admin, command)(ctx, args)
             except Exception as e:
-                pprint(e)
                 await ctx.send(f"Cette sous-commande `{command}` admin n'existe pas, ou elle a plantée.")
                 return False
 
