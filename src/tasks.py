@@ -110,7 +110,7 @@ class Tasks:
                             elif dbEvent['modified'] < event['modified_timestamp']:
                                 try:
                                     # modified message event
-                                    message = await channel.get_message(dbEvent['msg_id'])
+                                    message = await channel.fetch_message(dbEvent['msg_id'])
 
                                     messageText = f"@here, événement modifié {event['modified'].strftime('%A %d à %Hh')}"
 
