@@ -10,6 +10,19 @@ class Admin:
         self.api = bot.api
         self.db = bot.db
 
+    async def status(self, ctx, args):
+        servers = self.bot.guilds
+        guilds = self.db.fetchall("SELECT id FROM guilds")
+        events = self.db.fetchall("SELECT id FROM events")
+
+        message = (
+            f"Serveurs connectés : {len(servers)}\n"
+            f"Guilde liées : {len(guilds)}\n"
+            f"Evénéments gérés : {len(events)}"
+        )
+
+        await ctx.author.send(message)
+
     async def sync_guilds(self, ctx, args):
         attachedGuilds = dict()
         rows = self.db.fetchall("SELECT id, rp_token, response FROM guilds")

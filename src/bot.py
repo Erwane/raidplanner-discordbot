@@ -108,7 +108,7 @@ class Bot:
                 command = args.pop(0)
                 await getattr(admin, command)(ctx, args)
             except Exception as e:
-                await ctx.send(f"Cette sous-commande `{command}` admin n'existe pas, ou elle a plantée.")
+                await ctx.author.send(f"Cette sous-commande `{command}` admin n'existe pas, ou elle a plantée.")
                 return False
 
         @status.error
