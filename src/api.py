@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from .db import Db
 from .mylibs import log
 from datetime import datetime
 from requests.structures import CaseInsensitiveDict
@@ -66,15 +65,15 @@ class Api:
 
     # GET request.
     def _get(self, uri, headers={}):
-        return self.doRequest("GET", uri, headers={})
+        return self.doRequest("GET", uri, headers=headers)
 
     # PUT request
     def _put(self, uri, params={}, headers={}):
-        return self.doRequest("PUT", uri, params={}, headers={})
+        return self.doRequest("PUT", uri, params=params, headers=headers)
 
     # DELETE request
     def _delete(self, uri, params={}, headers={}):
-        return self.doRequest("DELETE", uri, params={}, headers={})
+        return self.doRequest("DELETE", uri, params=params, headers=headers)
 
     # get Raidplanner User information
     def getUser(self, discordUserId):
