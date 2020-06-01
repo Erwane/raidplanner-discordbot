@@ -1,0 +1,6 @@
+# Changelog
+
+## 2020-06-01 - version 1.1
+- upgrade discord py version
+- use new discord.ext.commands format
+- add log
