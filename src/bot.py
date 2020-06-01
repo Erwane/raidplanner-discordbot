@@ -3,7 +3,6 @@
 from .api import Api
 from .db import Db
 from .admin import Admin
-from .message import Message
 from .mylibs import log
 from .reaction import Reaction
 from .setup import Setup
@@ -16,10 +15,10 @@ class Bot:
     def __init__(self, config):
         self.config = config
         self.client = commands.Bot(command_prefix=config['prefix'], owner_ids=config['owners'])
+        self.client.remove_command('help')
         self.bot = self.client
         self.db = Db(self)
         self.api = Api(self)
-        self.Message = Message(self)
         self.Reaction = Reaction(self)
         self.Tasks = Tasks(self)
 
@@ -28,7 +27,7 @@ class Bot:
     def initEvents(self):
         @self.client.event  # event decorator/wrapper
         async def on_ready():
-            log().info(f"Bot is up as {self.client.user} with version {discord.version_info}")
+            log().info(f"Bot is up as {self.client.user} with version discord.py {discord.__version__}")
 
         @self.client.event
         async def on_raw_reaction_add(payload):
@@ -49,12 +48,12 @@ class Bot:
                 self.api.discordDetach(False, guild, raidplannerGuild)
 
         # Me
-        @self.client.command()
+        @self.client.command(hidden=True)
         async def me(ctx):
             await ctx.author.send(f"Votre id discord: {ctx.author.id}")
 
         # Bot status
-        @self.bot.command()
+        @self.bot.command(brief="Statut du bot.")
         @commands.guild_only()
         async def status(ctx):
             channel = ctx.message.channel
@@ -72,28 +71,28 @@ class Bot:
     """)
 
         # Setup: attach bot to guild
-        @self.client.command()
+        @self.client.command(brief="Lie le bot à votre guilde Raidplanner MMOrga.")
         async def attach(ctx):
             setup = Setup(self)
             await setup.attach(ctx.message)
 
         # Setup: detach bot from guild
-        @self.client.command()
+        @self.client.command(brief="Détache le bot de votre guilde Raidplanner MMOrga.")
         async def detach(ctx):
             setup = Setup(self)
             await setup.detach(ctx.message)
 
-        @self.client.command()
+        @self.client.command(brief="Configure le canal de sortie des événenemts.")
         async def chan(ctx):
             setup = Setup(self)
             await setup.chan(ctx.message)
 
-        @self.client.command()
+        @self.client.command(brief="Configure le délai de publication d'un événement.")
         async def days(ctx):
             setup = Setup(self)
             await setup.days(ctx.message)
 
-        @self.client.command(name="admin")
+        @self.client.command(name="admin", hidden=True)
         async def admin(ctx, *args):
             is_owner = await self.client.is_owner(ctx.author)
             if not is_owner:
@@ -116,6 +115,43 @@ class Bot:
         async def private_message_error(ctx, error):
             if isinstance(error, commands.NoPrivateMessage):
                 await ctx.send('Désolé, cette commande doit être utilisé sur un serveur discord.')
+
+        @self.bot.command()
+        async def help(ctx):
+            myEmbed=discord.Embed(
+                title="RaidplannerBot",
+                url="https://mmorga.org/content/discord",
+                description="""Ce robot permet aux membres de votre discord de définir leur présence aux événements que vous avez créés sur le site MMOrga/Raidplanner""",
+                color=0x93765d
+            ).set_thumbnail(
+                url="https://cdn.discordapp.com/avatars/367796880824074240/01b803f15658f89ce22658cdf8c3b977.png?size=256"
+            ).add_field(
+                name="!rp attach",
+                value="""Permet d'attacher le robot à votre guilde MMOrga. Vous trouverez votre token de guilde via la page https://mmorga.org/guild/my puis "options et robot discord".""",
+                inline=False
+            ).add_field(
+                name="!rp status",
+                value="""Affiche le statut du robot pour ce serveur.""",
+                inline=False
+            ).add_field(
+                name="!rp detach",
+                value="""Détache le robot de votre guilde MMOrga. Il ne plubliera plus d'événement.""",
+                inline=False
+            ).add_field(
+                name="!rp chan",
+                value="""Définit le canal où seront publiés les événements. Les droits nécessaires sont disponibles dans la documentation.""",
+                inline=False
+            ).add_field(
+                name="!rp days",
+                value="""Les événements ayant lieu dans les `x` jours seront publiés dans le canal. Par défaut **7**""",
+                inline=False
+            ).add_field(
+                name="Documentation",
+                value="""Retrouvez toute la documentation sur cette page : https://mmorga.org/content/discord""",
+                inline=True
+            )
+
+            await ctx.author.send("", embed=myEmbed)
 
     def run(self):
         self.client.run(self.config['discord']['token'])
