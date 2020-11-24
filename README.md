@@ -3,7 +3,11 @@
 
 Ce robot permet aux membres de votre discord de définir leur présence aux événements que vous avez créés sur le site [MMOrga Raidplanner](https://raidplanner.org/)
 
+## /!\\ **Warning** /!\\
 Il n'est pas autonome et requiert une guilde inscrite sur le site MMOrga Raidplanner.
+
+This bot is not standalone and can't be used without MMOrga.org Raidplanner website
+
 
 ## Commandes
 
