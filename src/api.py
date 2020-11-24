@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# Api connection
 
 from .mylibs import log
 from datetime import datetime
@@ -6,19 +6,19 @@ from requests.structures import CaseInsensitiveDict
 import random
 import hmac
 from urllib.request import Request, urlopen
-from urllib.error import URLError, HTTPError
+from urllib.error import HTTPError
 import json
 import urllib
+# noinspection PyPackageRequirements
 import discord
-from pprint import pprint
+
 
 class Api:
     def __init__(self, bot):
-        # self.client = http.client
         self.config = bot.config['api']
         self.baseUrl = self.config['base_url']
         self.bot = bot
-        log().info(f"Api initiliazed with baseUrl: {self.baseUrl}")
+        log().info(f"Api initialized with baseUrl: {self.baseUrl}")
 
     def doRequest(self, method, uri, params={}, headers={}):
         try:
@@ -43,10 +43,9 @@ class Api:
                     data=params.encode('utf-8')
                 )
 
-
             response = urlopen(request)
 
-            if response and response.status >=200 and response.status < 300:
+            if response and response.status >= 200 and response.status < 300:
                 return json.loads(response.read())
             else:
                 return False
@@ -132,6 +131,7 @@ class Api:
     """
     fetch next raidplanner events
     """
+
     def nextEvents(self):
         events = []
 

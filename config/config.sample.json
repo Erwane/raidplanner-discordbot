@@ -1,7 +1,9 @@
 {
+    "debug": 0,
     "discord": {
         "token": ""
     },
+    "prefix": "!rp ",
     "api": {
         "base_url": "api.raidplanner.org:443",
         "key": "",
@@ -9,5 +11,6 @@
     },
     "tasks": {
         "interval": 60
-    }
+    },
+    "owners": []
 }
