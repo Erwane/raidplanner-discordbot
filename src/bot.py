@@ -166,7 +166,8 @@ class Bot:
             return False
 
         # check for guild server owner
-        if message.author != message.guild.owner:
+        is_owner = await self.bot.is_owner(message.author)
+        if not is_owner:
             if notify:
                 await message.author.send(f"Désolé {message.author.name}, vous n'êtes pas le propriétaire de ce serveur.");
             return False
