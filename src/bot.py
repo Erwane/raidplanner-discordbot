@@ -165,11 +165,17 @@ class Bot:
             await message.author.send(f"Désolé, cette commande doit être utilisé sur un serveur discord.");
             return False
 
+        # Waiting for intent members.
+        # Temporarily disable this command
+        await message.author.send(
+            'Discord ne répondant pas à ma demande `intent members` pour connaitre le propriétaire du serveur, '
+            'cette commande est désactivé.')
+
         # check for guild server owner
         is_owner = await self.bot.is_owner(message.author)
         if not is_owner:
             if notify:
-                await message.author.send(f"Désolé {message.author.name}, vous n'êtes pas le propriétaire de ce serveur.");
+                await message.author.send(f"Désolé {message.author.name}, vous n'êtes pas le propriétaire de ce serveur.")
             return False
 
         return True
@@ -182,7 +188,8 @@ class Bot:
         raidplannerUser = self.db.getUser(discordUser.id);
 
         if not raidplannerUser and notify:
-            await discordUser.send("""Pour pouvoir interragir avec moi, vous devez lier votre compte Raidplanner avec votre compte Discord.
-Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth
-""")
+            await discordUser.send(
+                "Pour pouvoir interragir avec moi, vous devez lier votre compte Raidplanner avec votre compte "
+                "Discord.\n "
+                "Veuillez cliquer ici pour faire cette connexion : https://mmorga.org/oauth/discord")
         return raidplannerUser
