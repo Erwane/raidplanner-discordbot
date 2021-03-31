@@ -171,6 +171,8 @@ class Bot:
             'Discord ne répondant pas à ma demande `intent members` pour connaitre le propriétaire du serveur, '
             'cette commande est désactivé.')
 
+        return False
+
         # check for guild server owner
         is_owner = await self.bot.is_owner(message.author)
         if not is_owner:
