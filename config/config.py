@@ -7,7 +7,6 @@ Config class
 import argparse
 import json
 import os
-import pprint
 
 
 class Config:
@@ -16,7 +15,6 @@ class Config:
     @staticmethod
     def read():
         if Config.__conf is None:
-            pprint.pprint(" ==> Load config")
             with open('config/config.json', 'r') as f:
                 Config.__conf = json.load(f)
 
