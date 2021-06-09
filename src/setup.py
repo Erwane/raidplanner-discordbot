@@ -14,8 +14,8 @@ class Setup:
 
     # Attach discord guild to Raidplanner
     async def attach(self, msg):
-        # if not await self.bot.checkServerOwner(msg, True):
-        #     return False
+        if not await self.bot.checkServerOwner(msg, True):
+            return False
 
         # author
         author = msg.author
@@ -127,8 +127,8 @@ Vous trouverez ce token comme ceci :
     # assign an events channel for bot
     # check permission before attach
     async def chan(self, msg):
-        # if not await self.bot.checkServerOwner(msg, True):
-        #     return False
+        if not await self.bot.checkServerOwner(msg, True):
+            return False
 
         # vars
         author = msg.author
@@ -231,8 +231,8 @@ Pour que le service fonctionne bien, voici les droits requis dans ce canal :
     nombre de jour pour qu'un événement soit publié
     """
     async def days(self, msg):
-        # if not await self.bot.checkServerOwner(msg, True):
-        #     return False
+        if not await self.bot.checkServerOwner(msg, True):
+            return False
 
         # vars
         guild = msg.guild

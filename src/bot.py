@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from config.config import Config
 from .api import Api
 from .db import Db
@@ -167,19 +168,12 @@ class Bot:
             await message.author.send(f"Désolé, cette commande doit être utilisé sur un serveur discord.");
             return False
 
-        # Waiting for intent members.
-        # Temporarily disable this command
-        await message.author.send(
-            'Discord ne répondant pas à ma demande `intent members` pour connaitre le propriétaire du serveur, '
-            'cette commande est désactivé.')
-
-        return False
-
         # check for guild server owner
-        is_owner = await self.bot.is_owner(message.author)
-        if not is_owner:
+        if message.author.id != message.channel.guild.owner_id:
             if notify:
-                await message.author.send(f"Désolé {message.author.name}, vous n'êtes pas le propriétaire de ce serveur.")
+                await message.channel.send(
+                    f"Désolé {message.author.name}, vous n'êtes pas le propriétaire de ce serveur."
+                )
             return False
 
         return True
