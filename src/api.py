@@ -1,5 +1,5 @@
 # Api connection
-
+from config.config import Config
 from .mylibs import log
 from datetime import datetime
 from requests.structures import CaseInsensitiveDict
@@ -14,9 +14,11 @@ import discord
 
 
 class Api:
+    __config = None
+
     def __init__(self, bot):
-        self.config = bot.config['api']
-        self.baseUrl = self.config['base_url']
+        self.__config = Config.read()['api']
+        self.baseUrl = self.__config['base_url']
         self.bot = bot
         log().info(f"Api initialized with baseUrl: {self.baseUrl}")
 
@@ -30,14 +32,14 @@ class Api:
             if method == 'GET':
                 headers = self._appendSignature(headers)
                 request = Request(
-                    self.config['base_url'] + uri,
+                    self.__config['base_url'] + uri,
                     method=method,
                     headers=headers
                 )
             else:
                 headers = self._appendSignature(headers, params)
                 request = Request(
-                    self.config['base_url'] + uri,
+                    self.__config['base_url'] + uri,
                     method=method,
                     headers=headers,
                     data=params.encode('utf-8')
@@ -191,11 +193,11 @@ class Api:
 
         # create hmac
         content = json.dumps(toSign, separators=(',', ':')).encode('utf-8')
-        digest = hmac.new(self.config['secret'].encode('utf-8'), msg=content, digestmod='sha256')
+        digest = hmac.new(self.__config['secret'].encode('utf-8'), msg=content, digestmod='sha256')
 
         signatureTemplate = 'keyId="{0}",algorithm="hmac-sha256",headers="{1}",nonce="{2}",signature="{3}"'
         signature = signatureTemplate.format(
-            self.config['key'],
+            self.__config['key'],
             headers['headers'],
             nonce,
             digest.hexdigest().upper()

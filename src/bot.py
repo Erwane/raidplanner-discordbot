@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+from config.config import Config
 from .api import Api
 from .db import Db
 from .admin import Admin
@@ -9,12 +9,14 @@ from .setup import Setup
 from .tasks import Tasks
 import discord
 from discord.ext import commands
-from pprint import pprint
+
 
 class Bot:
-    def __init__(self, config):
-        self.config = config
-        self.client = commands.Bot(command_prefix=config['prefix'], owner_ids=config['owners'])
+    __config = None
+
+    def __init__(self):
+        self.__config = Config.read()
+        self.client = commands.Bot(command_prefix=self.__config['prefix'], owner_ids=self.__config['owners'])
         self.client.remove_command('help')
         self.bot = self.client
         self.db = Db(self)
@@ -154,7 +156,7 @@ class Bot:
             await ctx.author.send("", embed=myEmbed)
 
     def run(self):
-        self.client.run(self.config['discord']['token'])
+        self.client.run(self.__config['discord']['token'])
 
     """
     Check if author is server owner

@@ -1,20 +1,26 @@
 # -*- coding: utf-8 -*-
 
-import os, json, sqlite3, time
-from pprint import pprint
+from config.config import Config
+import json
+import sqlite3
+import time
+
 
 class Db:
+    db = None
+
     def __init__(self, bot):
         self.bot = bot
-        dbPath = bot.config['rootPath'] + '/resources/bot.db'
-        self.db = sqlite3.connect(dbPath, detect_types=sqlite3.PARSE_COLNAMES)
+        db_path = Config.read()['root_path'] + '/resources/bot.db'
+        self.db = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_COLNAMES)
         self.db.row_factory = sqlite3.Row
 
         self._doMigrations()
 
     # close database connection on exit
     def __del__(self):
-        self.db.close()
+        if self.db:
+            self.db.close()
 
     # create table
     def createTable(self, query, *args):

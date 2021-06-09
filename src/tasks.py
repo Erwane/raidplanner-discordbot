@@ -1,19 +1,23 @@
 # -*- coding: utf-8 -*-
 
-from .mylibs import log
 import asyncio
+from config.config import Config
 from datetime import datetime
+from .mylibs import log
+# noinspection PyPackageRequirements
 import discord
 import time
-from pprint import pprint
+
 
 class Tasks:
+    __config = None
+
     def __init__(self, bot):
         # bot objects
         self.api = bot.api
         self.client = bot.client
         self.db = bot.db
-        self.timing = bot.config['tasks']['interval']
+        self.timing = Config.read()['tasks']['interval']
 
         # reactions
         self.reactionNo = "🚫"
