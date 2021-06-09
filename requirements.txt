@@ -1,5 +1,5 @@
 # Discord
-discord.py==1.6.0
+discord.py==1.7.2
 
 # Requests
 requests>=2.23,<3
