@@ -15,10 +15,12 @@ class Config:
     @staticmethod
     def read():
         if Config.__conf is None:
-            with open('config/config.json', 'r') as f:
+            root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
+            with open(root_path + '/config/config.json', 'r') as f:
                 Config.__conf = json.load(f)
 
-            Config.__conf['root_path'] = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+            Config.__conf['root_path'] = root_path
 
             # Parse arguments
             parser = argparse.ArgumentParser()
