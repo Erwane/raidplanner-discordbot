@@ -105,12 +105,14 @@ class Bot:
             if not raidplannerAdmin:
                 return False
 
+            command = None
             try:
-                admin = Admin(self);
+                admin = Admin(self)
                 args = list(args)
                 command = args.pop(0)
                 await getattr(admin, command)(ctx, args)
             except Exception as e:
+                log().error(f"{e}")
                 await ctx.author.send(f"Cette sous-commande `{command}` admin n'existe pas, ou elle a plantée.")
                 return False
 

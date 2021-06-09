@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import asyncio
-import discord
-from pprint import pprint
+"""
+Admin commands
+"""
+
 
 class Admin:
     def __init__(self, bot):
@@ -10,41 +11,48 @@ class Admin:
         self.api = bot.api
         self.db = bot.db
 
-    async def status(self, ctx, args):
+    # noinspection PyUnusedLocal
+    async def status(self, ctx, args=None):
         servers = self.bot.guilds
         guilds = self.db.fetchall("SELECT id FROM guilds")
         events = self.db.fetchall("SELECT id FROM events")
 
-        message = (
-            f"Serveurs connectés : {len(servers)}\n"
-            f"Guilde liées : {len(guilds)}\n"
-            f"Evénéments gérés : {len(events)}"
-        )
+        if not guilds:
+            guilds = []
+        if not events:
+            events = []
 
-        await ctx.author.send(message)
+        output = f"""Serveurs connectés : {len(servers)}
+Guilde liées : {len(guilds)}
+Événements gérés : {len(events)}
+"""
+        await ctx.author.send(output)
 
-    async def sync_guilds(self, ctx, args):
-        attachedGuilds = dict()
+    # noinspection PyUnusedLocal
+    async def sync_guilds(self, ctx, args=None):
+        attached_guilds = dict()
         rows = self.db.fetchall("SELECT id, rp_token, response FROM guilds")
         for row in rows:
-            attachedGuilds[row['id']] = row
+            attached_guilds[row['id']] = row
 
-        botGuilds = dict()
+        bot_guilds = dict()
         for guild in self.bot.guilds:
-            botGuilds[guild.id] = guild
+            bot_guilds[guild.id] = guild
 
         logs = []
 
-        for key, attached in attachedGuilds.items():
-            if not attached['id'] in botGuilds:
-                # Bot is attached but not on server
+        for key, attached in attached_guilds.items():
+            if not attached['id'] in bot_guilds:
+                # Remove guild from DB
+                self.db.detachBot(attached['id'])
+
+                # Call api detach (clean the discord_server field)
                 self.api.discordDetach(ctx.author, False, attached)
-                self.db.query('DELETE FROM events WHERE guild_id=?', attached['id'])
-                # self.db.query('DELETE FROM guilds WHERE id=?', attached['id'])
+
                 logs.append(f"Detach: Guild {attached['infos']['title']}")
             else:
                 # Bot is on server and attached
-                guild = botGuilds[attached['id']]
+                guild = bot_guilds[attached['id']]
                 self.api.discordAttach(ctx.author, guild, attached)
                 logs.append(f"Attach: Guild {attached['infos']['title']} to server {guild.name}")
 
